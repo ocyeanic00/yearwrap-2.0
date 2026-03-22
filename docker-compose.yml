@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  server:
+    build: ./server
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/yearwrap
+      - AI_SERVICE_URL=http://ai-service:5001
+    depends_on:
+      - mongodb
+      - ai-service
+
+  ai-service:
+    build: ./ai-service
+    ports:
+      - "5001:5001"
+
+  client:
+    build: ./client
+    ports:
+      - "3000:3000"
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:

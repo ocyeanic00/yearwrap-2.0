@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-softBrown;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+@layer utilities {
+  .floating-card {
+    @apply rounded-3xl shadow-lg transition-all duration-300 ease-out;
+  }
+  
+  .floating-card:hover {
+    @apply scale-105 shadow-xl;
+  }
+}
