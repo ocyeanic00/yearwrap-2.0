@@ -63,8 +63,8 @@ export default function FolderModal({ name, year = 2024, onClose }) {
                     <>
                         <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handlePhoto} />
                         <button onClick={() => fileRef.current?.click()}
-                            style={{ marginTop: 12, background: 'transparent', border: '1px dashed #c4a07a', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#7a5a3e', cursor: 'pointer', width: '100%' }}>
-                            + add photos ({photos.length}/4)
+                            style={{ marginTop: 12, background: 'transparent', border: '1px dashed #c4a07a', borderRadius: 8, padding: '8px 14px', fontSize: 12, color: '#7a5a3e', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <i className="ri-image-add-line" style={{ fontSize: 15 }} /> add photos ({photos.length}/4)
                         </button>
                     </>
                 )}

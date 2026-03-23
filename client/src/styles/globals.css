@@ -1,3 +1,5 @@
+@import 'remixicon/fonts/remixicon.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +15,7 @@
   .floating-card {
     @apply rounded-3xl shadow-lg transition-all duration-300 ease-out;
   }
-  
+
   .floating-card:hover {
     @apply scale-105 shadow-xl;
   }
