@@ -1,88 +1,150 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import FolderModal from '../components/memory/FolderModal'
 
-function Home() {
+const FOLDERS = [
+  { name: 'my_pov', color: '#e8c4b8', top: '22%', left: '28%' },
+  { name: 'peeps', color: '#d4cbb8', top: '20%', left: '72%' },
+  { name: 'moments', color: '#d4c8a8', top: '48%', left: '18%' },
+  { name: 'triptrip', color: '#ddd8c0', top: '50%', left: '76%' },
+  { name: 'mood', color: '#e0c4c0', top: '72%', left: '24%' },
+  { name: 'challenges', color: '#d8d0b8', top: '70%', left: '74%' },
+]
+
+export default function Home() {
   const navigate = useNavigate()
-
-  const categories = [
-    { name: 'my_pov', position: { top: '18%', left: '26%' }, color: 'bg-[#F4D9C6]/90' },
-    { name: 'peeps', position: { top: '16%', right: '18%' }, color: 'bg-[#E8DCC4]/90' },
-    { name: 'moments', position: { top: '42%', left: '16%' }, color: 'bg-[#E8DCC4]/80' },
-    { name: 'mood', position: { bottom: '22%', left: '20%' }, color: 'bg-[#F2D7D9]/80' },
-    { name: 'triptrip', position: { top: '44%', right: '16%' }, color: 'bg-[#F9F3E3]/90' },
-    { name: 'challenges', position: { bottom: '20%', right: '18%' }, color: 'bg-[#E8DCC4]/85' }
-  ]
+  const [activeFolder, setActiveFolder] = useState(null)
 
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#EDE8E0]">
-      {/* Top left navigation icons */}
-      <div className="absolute top-6 left-6 z-30 space-y-6">
-        <div 
-          className="cursor-pointer flex flex-col items-center group"
-          onClick={() => navigate('/dump-it')}
-        >
-          <div className="w-14 h-14 bg-gray-400/80 rounded-xl flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
-            🗑️
-          </div>
-          <span className="text-xs text-gray-600 mt-1 font-light">dump_it</span>
-        </div>
-        
-        <div 
-          className="cursor-pointer flex flex-col items-center group"
-          onClick={() => navigate('/treasure-chest')}
-        >
-          <div className="w-14 h-14 bg-orange-300/80 rounded-xl flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
-            📦
-          </div>
-          <span className="text-xs text-gray-600 mt-1 font-light">treasure_chest</span>
-        </div>
-      </div>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#f0ebe0' }}>
 
-      {/* Bottom left compass icon */}
-      <div className="absolute bottom-6 left-6 z-30">
-        <div className="w-10 h-10 bg-gray-700/70 rounded-full flex items-center justify-center text-white text-sm font-light">
-          N
-        </div>
-      </div>
-
-      {/* Background flower image */}
-      <div 
-        className="absolute inset-0"
-        style={{
-          backgroundImage: 'url(/src/assets/bg.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
+      {/* Background flower */}
+      <img
+        src="/bg-flower.jpg"
+        alt=""
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }}
       />
 
-      {/* Center main card with "Ocyeanic" button */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
-        <div className="bg-white/95 rounded-[32px] shadow-2xl w-72 h-72 flex flex-col items-center justify-center">
-          <div className="bg-[#B8A08A] text-white px-10 py-3 rounded-full text-base font-normal shadow-md">
-            Ocyeanic
-          </div>
-        </div>
+      {/* Sidebar top-left */}
+      <div style={{ position: 'absolute', top: 20, left: 16, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <SideIcon src="/icon-dump.png" label="dump_it" onClick={() => navigate('/dump-it')} />
+        <SideIcon src="/icon-treasure.png" label="treasure_chest" onClick={() => navigate('/treasure-chest')} />
       </div>
 
-      {/* Floating category cards - small rounded squares */}
-      {categories.map((cat) => (
+      {/* N compass bottom-left */}
+      <div style={{
+        position: 'absolute', bottom: 18, left: 18, zIndex: 20,
+        width: 28, height: 28, borderRadius: '50%',
+        background: 'rgba(60,45,30,0.65)', color: 'white',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 11, fontWeight: 600, fontFamily: 'Georgia, serif',
+      }}>N</div>
+
+      {/* Folder icons */}
+      {FOLDERS.map((f) => (
         <div
-          key={cat.name}
-          className={`absolute ${cat.color} backdrop-blur-sm rounded-2xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-xl z-10 flex items-end justify-start p-4`}
+          key={f.name}
+          onClick={() => setActiveFolder(f.name)}
           style={{
-            ...cat.position,
-            width: '140px',
-            height: '140px'
+            position: 'absolute',
+            top: f.top, left: f.left,
+            transform: 'translate(-50%, -50%)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 5, cursor: 'pointer', zIndex: 10,
           }}
-          onClick={() => console.log('Category:', cat.name)}
         >
-          <span className="text-sm font-normal text-gray-700">
-            {cat.name}
+          <FolderSVG color={f.color} />
+          <span style={{
+            fontSize: 10, color: '#4a3728',
+            fontFamily: 'Georgia, serif',
+            letterSpacing: 0.2,
+          }}>
+            {f.name.replace('_', ' ')}
           </span>
         </div>
       ))}
+
+      {/* Center card */}
+      <div style={{
+        position: 'absolute', top: '44%', left: '50%',
+        transform: 'translate(-50%, -50%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 10, zIndex: 15,
+      }}>
+        <div style={{
+          width: 130, height: 130,
+          background: 'rgba(255,255,255,0.92)',
+          borderRadius: 22,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 6, cursor: 'pointer',
+        }}>
+          <span style={{ fontSize: 22, color: '#c4a898', lineHeight: 1 }}>+</span>
+          <span style={{ fontSize: 10, color: '#b09080', fontFamily: 'Georgia, serif' }}>add your photo</span>
+        </div>
+        {/* Username pill */}
+        <div style={{
+          background: 'rgba(70,55,42,0.75)',
+          color: 'white', borderRadius: 20,
+          padding: '5px 18px', fontSize: 12,
+          fontFamily: 'Georgia, serif',
+          backdropFilter: 'blur(4px)',
+        }}>
+          Ocyeanic
+        </div>
+      </div>
+
+      {/* Folder modal */}
+      {activeFolder && (
+        <FolderModal name={activeFolder} onClose={() => setActiveFolder(null)} />
+      )}
     </div>
   )
 }
 
-export default Home
+function SideIcon({ src, label, onClick }) {
+  return (
+    <div onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+      <div style={{
+        width: 40, height: 40, borderRadius: 10,
+        background: 'rgba(255,255,255,0.55)',
+        backdropFilter: 'blur(6px)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        overflow: 'hidden',
+      }}>
+        <img src={src} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} />
+      </div>
+      <span style={{ fontSize: 9, color: '#5a3e2b', fontFamily: 'Georgia, serif' }}>{label}</span>
+    </div>
+  )
+}
+
+function FolderSVG({ color }) {
+  const dark = shade(color, -22)
+  return (
+    <div
+      style={{ width: 72, height: 60, filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.13))', transition: 'transform 0.18s' }}
+      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) translateY(-2px)'}
+      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1) translateY(0)'}
+    >
+      <svg viewBox="0 0 72 60" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+        {/* tab */}
+        <path d="M3 16 Q3 12 7 12 L26 12 Q29 12 31 9 L33 6 Q35 3 38 3 L65 3 Q69 3 69 7 L69 16 Z" fill={dark} />
+        {/* body */}
+        <rect x="3" y="16" width="66" height="40" rx="7" fill={color} />
+        {/* shine */}
+        <rect x="3" y="16" width="66" height="18" rx="7" fill="white" opacity="0.13" />
+      </svg>
+    </div>
+  )
+}
+
+function shade(hex, p) {
+  const n = parseInt(hex.replace('#', ''), 16)
+  const r = Math.min(255, Math.max(0, (n >> 16) + p))
+  const g = Math.min(255, Math.max(0, ((n >> 8) & 0xff) + p))
+  const b = Math.min(255, Math.max(0, (n & 0xff) + p))
+  return `rgb(${r},${g},${b})`
+}
