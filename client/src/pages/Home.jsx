@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import FolderModal from '../components/memory/FolderModal'
 import useUserStore from '../store/userStore'
+import useMemoryStore from '../store/memoryStore'
+
+// TAN & COFFEE PALETTE
+// #3b2314 — dark espresso
+// #6b4226 — mid coffee
+// #8b5e3c — light coffee
+// #c8a882 — tan
+// #e8d5b8 — pale tan
+// #f5ead8 — cream
 
 const MENUS = {
   File: [
@@ -21,13 +30,8 @@ const MENUS = {
     { label: 'Recap', action: 'recap' },
     { label: 'Login', action: 'login' },
   ],
-  Window: [
-    { label: 'Minimize', disabled: true },
-    { label: 'Zoom', disabled: true },
-  ],
-  Help: [
-    { label: 'About YearWrap', disabled: true },
-  ],
+  Window: [{ label: 'Minimize', disabled: true }, { label: 'Zoom', disabled: true }],
+  Help: [{ label: 'About YearWrap', disabled: true }],
 }
 
 function shade(hex, p) {
@@ -36,9 +40,9 @@ function shade(hex, p) {
 }
 
 function FolderSVG({ color, size = 62 }) {
-  const dark = shade(color, -28)
+  const dark = shade(color, -30)
   return (
-    <svg viewBox="0 0 72 60" style={{ width: size, height: size * 0.83, filter: 'drop-shadow(0 4px 10px rgba(99,32,36,0.45))' }}>
+    <svg viewBox="0 0 72 60" style={{ width: size, height: size * 0.83, filter: 'drop-shadow(0 4px 10px rgba(59,35,20,0.5))' }}>
       <path d="M3 16 Q3 12 7 12 L26 12 Q29 12 31 9 L33 6 Q35 3 38 3 L65 3 Q69 3 69 7 L69 16 Z" fill={dark} />
       <rect x="3" y="16" width="66" height="40" rx="7" fill={color} />
       <rect x="3" y="16" width="66" height="18" rx="7" fill="white" opacity="0.18" />
@@ -56,11 +60,13 @@ function DesktopIcon({ children, label, onClick }) {
       }}>
       {children}
       <span style={{
-        fontSize: 11, color: '#f2e0dc', fontFamily: 'Georgia, serif',
-        textShadow: '0 1px 6px rgba(74,24,32,0.9)',
-        background: hovered ? 'rgba(99,32,36,0.72)' : 'transparent',
-        padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3,
-      }}>{label}</span>
+        fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif',
+        textShadow: '0 1px 6px rgba(59,35,20,0.9)',
+        background: hovered ? 'rgba(59,35,20,0.78)' : 'transparent',
+        padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3
+      }}>
+        {label}
+      </span>
     </div>
   )
 }
@@ -72,52 +78,45 @@ function DockIcon({ label, onClick, icon, img, active }) {
       <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
         style={{
           width: hovered ? 48 : 40, height: hovered ? 48 : 40, borderRadius: 11,
-          background: hovered ? 'rgba(196,136,140,0.35)' : 'rgba(242,224,220,0.15)',
-          border: '1px solid rgba(196,136,140,0.2)',
+          background: hovered ? 'rgba(200,168,130,0.35)' : 'rgba(245,234,216,0.12)',
+          border: '1px solid rgba(200,168,130,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', transition: 'all 0.15s',
-          boxShadow: hovered ? '0 4px 16px rgba(74,24,32,0.4)' : 'none',
-          overflow: 'hidden', marginBottom: hovered ? -8 : 0,
+          boxShadow: hovered ? '0 4px 16px rgba(59,35,20,0.45)' : 'none',
+          overflow: 'hidden', marginBottom: hovered ? -8 : 0
         }}>
         {img
           ? <img src={img} alt={label} style={{ width: 26, height: 26, objectFit: 'contain' }} />
-          : <i className={icon} style={{ fontSize: 20, color: '#f2e0dc' }} />}
+          : <i className={icon} style={{ fontSize: 20, color: '#f5ead8' }} />}
       </div>
       {hovered && (
         <div style={{
           position: 'absolute', bottom: '110%',
-          background: 'rgba(20,10,8,0.88)', color: '#f2e0dc',
+          background: 'rgba(30,16,8,0.92)', color: '#f5ead8',
           fontSize: 10, padding: '3px 9px', borderRadius: 6,
           whiteSpace: 'nowrap', pointerEvents: 'none', fontFamily: 'Georgia, serif',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid rgba(200,168,130,0.2)'
         }}>{label}</div>
       )}
-      {active && <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#c4888c' }} />}
+      {active && <div style={{ width: 3, height: 3, borderRadius: '50%', background: '#c8a882' }} />}
     </div>
   )
 }
 
-// ── GOOGLY EYES ──
 function GooglyEyes({ mousePos }) {
   const leftRef = useRef(null)
   const rightRef = useRef(null)
-
-  function getPupilOffset(eyeRef, maxDist = 3) {
+  function getPupilOffset(eyeRef) {
     if (!eyeRef.current || !mousePos) return { x: 0, y: 0 }
     const rect = eyeRef.current.getBoundingClientRect()
-    const cx = rect.left + rect.width / 2
-    const cy = rect.top + rect.height / 2
-    const dx = mousePos.x - cx
-    const dy = mousePos.y - cy
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2
+    const dx = mousePos.x - cx, dy = mousePos.y - cy
     const dist = Math.sqrt(dx * dx + dy * dy)
     if (dist === 0) return { x: 0, y: 0 }
-    const scale = Math.min(dist, maxDist * 6) / dist
+    const scale = Math.min(dist, 18) / dist
     return { x: (dx * scale) / 6, y: (dy * scale) / 6 }
   }
-
-  const lp = getPupilOffset(leftRef)
-  const rp = getPupilOffset(rightRef)
-
+  const lp = getPupilOffset(leftRef), rp = getPupilOffset(rightRef)
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
       {[{ ref: leftRef, p: lp }, { ref: rightRef, p: rp }].map(({ ref, p }, i) => (
@@ -125,13 +124,11 @@ function GooglyEyes({ mousePos }) {
           width: 16, height: 16, borderRadius: '50%',
           background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          position: 'relative', overflow: 'hidden', flexShrink: 0,
+          position: 'relative', overflow: 'hidden', flexShrink: 0
         }}>
           <div style={{
-            width: 8, height: 8, borderRadius: '50%', background: '#1a0a0c',
-            position: 'absolute',
-            transform: `translate(${p.x}px, ${p.y}px)`,
-            transition: 'transform 0.05s linear',
+            width: 8, height: 8, borderRadius: '50%', background: '#2a1408',
+            position: 'absolute', transform: `translate(${p.x}px, ${p.y}px)`, transition: 'transform 0.05s linear'
           }}>
             <div style={{ width: 3, height: 3, borderRadius: '50%', background: 'white', position: 'absolute', top: 1, left: 1 }} />
           </div>
@@ -141,86 +138,74 @@ function GooglyEyes({ mousePos }) {
   )
 }
 
-// ── LIVE CLOCK ──
 function LiveClock() {
   const [time, setTime] = useState(new Date())
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
+  useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const d = time
-  const h = d.getHours()
-  const m = String(d.getMinutes()).padStart(2, '0')
-  const ampm = h >= 12 ? 'PM' : 'AM'
-  const h12 = h % 12 || 12
+  const h = time.getHours(), m = String(time.getMinutes()).padStart(2, '0')
+  const ampm = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12
   return (
-    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap', letterSpacing: 0.1 }}>
-      {days[d.getDay()]} {d.getDate()} {months[d.getMonth()]} · {h12}:{m} {ampm}
+    <span style={{ fontSize: 11, color: 'rgba(245,234,216,0.85)', whiteSpace: 'nowrap', letterSpacing: 0.1 }}>
+      {days[time.getDay()]} {time.getDate()} {months[time.getMonth()]} · {h12}:{m} {ampm}
     </span>
   )
 }
 
-// ── MENU BAR ──
 function MenuBar({ mousePos, navigate, username }) {
   const [openMenu, setOpenMenu] = useState(null)
   const [ccOpen, setCcOpen] = useState(false)
-
   const handleAction = (action) => {
     setOpenMenu(null)
-    if (action === 'home') navigate('/')
-    else if (action === 'treasure') navigate('/treasure-chest')
-    else if (action === 'dump') navigate('/dump-it')
-    else if (action === 'recap') navigate('/recap')
-    else if (action === 'login') navigate('/login')
-    else if (action === 'dashboard') navigate('/dashboard')
+    const routes = { home: '/', treasure: '/treasure-chest', dump: '/dump-it', recap: '/recap', login: '/login', dashboard: '/dashboard' }
+    if (routes[action]) navigate(routes[action])
   }
-
   return (
     <>
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 30,
-        background: 'rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(32px) saturate(180%)',
+        background: 'rgba(59,35,20,0.60)', backdropFilter: 'blur(32px) saturate(180%)',
         WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-        borderBottom: '1px solid rgba(255,255,255,0.10)',
+        borderBottom: '1px solid rgba(200,168,130,0.20)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 16px', zIndex: 100,
-      }} onClick={() => { setOpenMenu(null); setCcOpen(false) }}>
+        padding: '0 16px', zIndex: 100
+      }}
+        onClick={() => { setOpenMenu(null); setCcOpen(false) }}>
 
-        {/* Left — apple + menus */}
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-          <i className="ri-apple-fill" style={{ fontSize: 15, color: 'rgba(255,255,255,0.9)', marginRight: 8 }} />
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.95)', fontWeight: 700, padding: '0 8px', cursor: 'default' }}>YearWrap</span>
-          {Object.keys(MENUS).map((menuName) => (
+          <img src="/logo.png" alt="YearWrap" style={{ width: 28, height: 28, objectFit: 'contain', marginRight: 6, opacity: 1, filter: 'brightness(1.2)' }}
+            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline' }} />
+          <i className="ri-leaf-line" style={{ fontSize: 16, color: '#c8a882', marginRight: 6, display: 'none' }} />
+          <span style={{ fontSize: 12, color: '#f5ead8', fontWeight: 700, padding: '0 8px', cursor: 'default' }}>YearWrap</span>
+          {Object.keys(MENUS).map(menuName => (
             <div key={menuName} style={{ position: 'relative' }}>
               <span onClick={() => setOpenMenu(openMenu === menuName ? null : menuName)}
                 style={{
-                  fontSize: 12, padding: '2px 8px', borderRadius: 4, cursor: 'default',
-                  color: openMenu === menuName ? '#1a0a0c' : 'rgba(255,255,255,0.70)',
-                  background: openMenu === menuName ? 'rgba(255,255,255,0.88)' : 'transparent',
-                  userSelect: 'none',
-                }}>{menuName}</span>
+                  fontSize: 12, padding: '2px 8px', borderRadius: 4, cursor: 'default', userSelect: 'none',
+                  color: openMenu === menuName ? '#3b2314' : 'rgba(245,234,216,0.72)',
+                  background: openMenu === menuName ? 'rgba(245,234,216,0.88)' : 'transparent'
+                }}>
+                {menuName}
+              </span>
               {openMenu === menuName && (
                 <div style={{
                   position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-                  background: 'rgba(30,18,12,0.92)', backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, minWidth: 180,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 200,
+                  background: 'rgba(40,22,10,0.96)', backdropFilter: 'blur(20px)',
+                  border: '1px solid rgba(200,168,130,0.18)', borderRadius: 8, minWidth: 180,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 200
                 }}>
                   {MENUS[menuName].map((item, i) => (
                     <div key={i} onClick={() => !item.disabled && handleAction(item.action)}
                       style={{
-                        padding: '7px 16px', fontSize: 12,
-                        color: item.disabled ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.88)',
+                        padding: '7px 16px', fontSize: 12, fontFamily: 'Georgia, serif',
+                        color: item.disabled ? 'rgba(245,234,216,0.3)' : 'rgba(245,234,216,0.88)',
                         cursor: item.disabled ? 'default' : 'pointer',
-                        borderBottom: i < MENUS[menuName].length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                        fontFamily: 'Georgia, serif',
+                        borderBottom: i < MENUS[menuName].length - 1 ? '1px solid rgba(200,168,130,0.08)' : 'none'
                       }}
-                      onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = 'rgba(99,32,36,0.6)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-                    >{item.label}</div>
+                      onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = 'rgba(107,66,38,0.6)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
+                      {item.label}
+                    </div>
                   ))}
                 </div>
               )}
@@ -228,151 +213,176 @@ function MenuBar({ mousePos, navigate, username }) {
           ))}
         </div>
 
-        {/* Right — status */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.80)' }}>{username}</span>
+          <span style={{ fontSize: 11, color: 'rgba(245,234,216,0.80)' }}>{username}</span>
           <GooglyEyes mousePos={mousePos} />
-          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.2)' }} />
+          <div style={{ width: 1, height: 14, background: 'rgba(200,168,130,0.3)' }} />
           <div onClick={() => setCcOpen(o => !o)}
             style={{
               width: 28, height: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 5, background: ccOpen ? 'rgba(255,255,255,0.18)' : 'transparent',
-              transition: 'background 0.15s',
+              borderRadius: 5, background: ccOpen ? 'rgba(200,168,130,0.25)' : 'transparent', transition: 'background 0.15s'
             }}>
             <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-              <rect x="0" y="0" width="7" height="5" rx="1.5" fill="rgba(255,255,255,0.85)" />
-              <rect x="11" y="0" width="7" height="5" rx="1.5" fill="rgba(255,255,255,0.85)" />
-              <rect x="0" y="7" width="7" height="5" rx="1.5" fill="rgba(255,255,255,0.85)" />
-              <rect x="11" y="7" width="7" height="5" rx="1.5" fill="rgba(255,255,255,0.85)" />
+              <rect x="0" y="0" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
+              <rect x="11" y="0" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
+              <rect x="0" y="7" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
+              <rect x="11" y="7" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
             </svg>
           </div>
-          <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.2)' }} />
+          <div style={{ width: 1, height: 14, background: 'rgba(200,168,130,0.3)' }} />
           <LiveClock />
         </div>
       </div>
-
       {ccOpen && <ControlCenter onClose={() => setCcOpen(false)} navigate={navigate} />}
     </>
   )
 }
 
-// ── CONTROL CENTER PANEL ──
 function ControlCenter({ onClose, navigate }) {
-  const [wifi, setWifi] = useState(false)
-  const [bluetooth, setBluetooth] = useState(true)
   const [airdrop, setAirdrop] = useState(false)
-  const [focus, setFocus] = useState(false)
-  const [brightness, setBrightness] = useState(70)
+  const [screenshot, setScreenshot] = useState(false)
+  const [brightness, setBrightness] = useState(100)
   const [volume, setVolume] = useState(50)
 
-  const Toggle = ({ label, icon, on, onToggle }) => (
-    <div onClick={onToggle} style={{
-      display: 'flex', alignItems: 'center', gap: 12,
-      background: on ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
-      border: `1px solid ${on ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.1)'}`,
-      borderRadius: 14, padding: '10px 14px', cursor: 'pointer', transition: 'all 0.18s',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = on ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.13)'}
-      onMouseLeave={e => e.currentTarget.style.background = on ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)'}
-    >
-      <div style={{
-        width: 34, height: 34, borderRadius: '50%',
-        background: on ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.15)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-      }}><i className={icon} style={{ fontSize: 16, color: on ? '#1a0a0c' : 'rgba(255,255,255,0.8)' }} /></div>
-      <div>
-        <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.92)', fontWeight: 600, margin: 0 }}>{label}</p>
-        <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', margin: 0 }}>{on ? 'On' : 'Off'}</p>
-      </div>
-    </div>
-  )
+  // Brightness overlay ref
+  const brightnessRef = useRef(null)
+
+  // Apply brightness via a dark overlay
+  useEffect(() => {
+    let overlay = document.getElementById('__brightness_overlay__')
+    if (!overlay) {
+      overlay = document.createElement('div')
+      overlay.id = '__brightness_overlay__'
+      overlay.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9999;transition:background 0.2s'
+      document.body.appendChild(overlay)
+    }
+    // brightness 100 = no overlay, 0 = fully black
+    const opacity = (100 - brightness) / 100 * 0.85
+    overlay.style.background = `rgba(0,0,0,${opacity})`
+    return () => { /* keep overlay alive */ }
+  }, [brightness])
+
+  // Volume via Web Audio API on all <audio>/<video> elements
+  useEffect(() => {
+    const els = document.querySelectorAll('audio, video')
+    els.forEach(el => { el.volume = volume / 100 })
+  }, [volume])
+
+  // AirDrop toggle — share when turning on
+  const handleAirdrop = () => {
+    const next = !airdrop
+    setAirdrop(next)
+    if (next && navigator.share) {
+      navigator.share({ title: 'YearWrap', text: 'Check out my year wrap!', url: window.location.href }).catch(() => { })
+    }
+  }
+
+  // Screenshot — uses html2canvas if available, else triggers browser print
+  const handleScreenshot = async () => {
+    setScreenshot(true)
+    try {
+      if (window.html2canvas) {
+        const canvas = await window.html2canvas(document.body)
+        const link = document.createElement('a')
+        link.download = 'yearwrap-screenshot.png'
+        link.href = canvas.toDataURL()
+        link.click()
+      } else {
+        window.print()
+      }
+    } catch {
+      window.print()
+    }
+    setTimeout(() => setScreenshot(false), 1500)
+  }
 
   const SmallBtn = ({ icon, label, on, onToggle }) => (
-    <div onClick={onToggle} title={label} style={{
-      width: 52, height: 52, borderRadius: '50%',
-      background: on ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.12)',
-      border: '1px solid rgba(255,255,255,0.15)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      cursor: 'pointer', transition: 'all 0.15s',
+    <div onClick={onToggle} style={{
+      display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', flex: 1,
+      background: on ? 'rgba(200,168,130,0.25)' : 'rgba(255,245,235,0.07)',
+      backdropFilter: 'blur(20px) saturate(180%)',
+      WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+      border: `1px solid ${on ? 'rgba(200,168,130,0.45)' : 'rgba(255,235,200,0.18)'}`,
+      borderRadius: 14, padding: '8px 10px', transition: 'all 0.15s',
+      boxShadow: 'inset 0 1px 0 rgba(255,235,200,0.10)',
     }}
-      onMouseEnter={e => e.currentTarget.style.background = on ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.2)'}
-      onMouseLeave={e => e.currentTarget.style.background = on ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.12)'}
-    ><i className={icon} style={{ fontSize: 20, color: on ? '#1a0a0c' : 'rgba(255,255,255,0.85)' }} /></div>
-  )
-
-  const NavBtn = ({ icon, label, onClick }) => (
-    <div onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-      borderRadius: 14, padding: '10px 14px', cursor: 'pointer', transition: 'all 0.15s',
-    }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.15)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-    >
-      <i className={icon} style={{ fontSize: 18, color: 'rgba(255,255,255,0.85)' }} />
-      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.88)', fontWeight: 500 }}>{label}</span>
-    </div>
-  )
-
-  const Slider = ({ label, icon, value, onChange }) => (
-    <div style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 14, padding: '12px 16px' }}>
-      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', margin: '0 0 8px', letterSpacing: 0.3 }}>{label}</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <i className="ri-sun-line" style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)' }} />
-        <input type="range" min="0" max="100" value={value} onChange={e => onChange(+e.target.value)}
-          style={{ flex: 1, accentColor: 'rgba(255,255,255,0.8)', height: 4, cursor: 'pointer' }} />
-        <i className={icon} style={{ fontSize: 14, color: 'rgba(255,255,255,0.7)' }} />
+      onMouseEnter={e => e.currentTarget.style.background = on ? 'rgba(200,168,130,0.32)' : 'rgba(255,245,235,0.13)'}
+      onMouseLeave={e => e.currentTarget.style.background = on ? 'rgba(200,168,130,0.25)' : 'rgba(255,245,235,0.07)'}>
+      <div style={{
+        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
+        background: on ? '#c8a882' : 'rgba(200,168,130,0.18)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <i className={icon} style={{ fontSize: 14, color: on ? '#3b2314' : 'rgba(245,234,216,0.85)' }} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#f5ead8', fontFamily: 'Georgia, serif', whiteSpace: 'nowrap' }}>{label}</p>
+        <p style={{ margin: 0, fontSize: 9, color: on ? '#c8a882' : 'rgba(200,168,130,0.55)' }}>{on ? 'On' : 'Off'}</p>
       </div>
     </div>
   )
+
+  const Slider = ({ label, iconMin, iconMax, value, onChange }) => (
+    <div style={{ background: 'rgba(200,168,130,0.08)', border: '1px solid rgba(200,168,130,0.15)', borderRadius: 14, padding: '12px 16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <p style={{ fontSize: 10, color: 'rgba(245,234,216,0.55)', margin: 0, letterSpacing: 0.5 }}>{label}</p>
+        <p style={{ fontSize: 10, color: 'rgba(200,168,130,0.7)', margin: 0 }}>{value}%</p>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <i className={iconMin} style={{ fontSize: 13, color: 'rgba(200,168,130,0.5)' }} />
+        <input type="range" min="0" max="100" value={value} onChange={e => onChange(+e.target.value)}
+          style={{ flex: 1, accentColor: '#c8a882', cursor: 'pointer' }} />
+        <i className={iconMax} style={{ fontSize: 13, color: '#c8a882' }} />
+      </div>
+    </div>
+  )
+
+  const glass = {
+    background: 'rgba(255,245,235,0.07)',
+    backdropFilter: 'blur(20px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+    border: '1px solid rgba(255,235,200,0.18)',
+    borderRadius: 16,
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 150 }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        position: 'absolute', top: 36, right: 12, width: 300,
-        background: 'rgba(20,10,8,0.55)',
-        backdropFilter: 'blur(40px) saturate(200%)',
-        WebkitBackdropFilter: 'blur(40px) saturate(200%)',
-        border: '1px solid rgba(255,255,255,0.14)',
-        borderRadius: 20, padding: 16,
-        boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
-        display: 'flex', flexDirection: 'column', gap: 10,
-        fontFamily: 'Georgia, serif',
+        position: 'absolute', top: 36, right: 12, width: 290,
+        background: 'rgba(30,14,6,0.45)',
+        backdropFilter: 'blur(60px) saturate(220%)',
+        WebkitBackdropFilter: 'blur(60px) saturate(220%)',
+        border: '1px solid rgba(255,220,170,0.22)',
+        borderRadius: 22, padding: 14,
+        boxShadow: '0 8px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,235,200,0.12)',
+        display: 'flex', flexDirection: 'column', gap: 10, fontFamily: 'Georgia, serif',
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <Toggle label="Wi-Fi" icon="ri-wifi-line" on={wifi} onToggle={() => setWifi(v => !v)} />
-          <Toggle label="Bluetooth" icon="ri-bluetooth-line" on={bluetooth} onToggle={() => setBluetooth(v => !v)} />
+
+        {/* AirDrop + Screenshot */}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <SmallBtn icon="ri-share-line" label="AirDrop" on={airdrop} onToggle={handleAirdrop} />
+          <SmallBtn icon="ri-screenshot-line" label="Screenshot" on={screenshot} onToggle={handleScreenshot} />
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <Toggle label="AirDrop" icon="ri-share-line" on={airdrop} onToggle={() => setAirdrop(v => !v)} />
-          <Toggle label="Focus" icon="ri-moon-line" on={focus} onToggle={() => setFocus(v => !v)} />
-        </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', padding: '4px 0' }}>
-          <SmallBtn icon="ri-sun-line" label="Display" />
-          <SmallBtn icon="ri-screenshot-line" label="Screenshot" />
-          <SmallBtn icon="ri-music-2-line" label="Music" />
-          <SmallBtn icon="ri-lock-line" label="Lock" />
-        </div>
-        {/* Weather + Spotify widgets */}
+
+        {/* Weather + Spotify */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {/* Weather */}
           <div style={{
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 14, padding: '14px 12px',
-            display: 'flex', flexDirection: 'column', gap: 4,
+            ...glass, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 4,
+            boxShadow: 'inset 0 1px 0 rgba(255,235,200,0.10)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <i className="ri-sun-cloudy-line" style={{ fontSize: 22, color: '#f5c842' }} />
-              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>weather</span>
+              <i className="ri-sun-cloudy-line" style={{ fontSize: 20, color: '#e8c87a' }} />
+              <span style={{ fontSize: 8, color: 'rgba(245,234,216,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>weather</span>
             </div>
-            <p style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1 }}>24°</p>
-            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.55)', margin: 0 }}>Partly cloudy</p>
-            <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+            <p style={{ fontSize: 24, fontWeight: 700, color: '#f5ead8', margin: 0, lineHeight: 1 }}>24°</p>
+            <p style={{ fontSize: 9, color: 'rgba(200,168,130,0.7)', margin: 0 }}>Partly cloudy</p>
+            <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
               {[{ d: 'Mon', i: 'ri-sun-line', t: '26°' }, { d: 'Tue', i: 'ri-drizzle-line', t: '21°' }, { d: 'Wed', i: 'ri-cloudy-line', t: '19°' }].map(w => (
                 <div key={w.d} style={{ flex: 1, textAlign: 'center' }}>
-                  <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.4)', margin: 0 }}>{w.d}</p>
-                  <i className={w.i} style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }} />
-                  <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', margin: 0 }}>{w.t}</p>
+                  <p style={{ fontSize: 7, color: 'rgba(200,168,130,0.5)', margin: 0 }}>{w.d}</p>
+                  <i className={w.i} style={{ fontSize: 10, color: '#c8a882' }} />
+                  <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.7)', margin: 0 }}>{w.t}</p>
                 </div>
               ))}
             </div>
@@ -380,85 +390,117 @@ function ControlCenter({ onClose, navigate }) {
 
           {/* Spotify */}
           <div style={{
-            background: 'rgba(30,215,96,0.10)', border: '1px solid rgba(30,215,96,0.2)',
-            borderRadius: 14, padding: '14px 12px',
-            display: 'flex', flexDirection: 'column', gap: 6,
+            ...glass, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 6,
+            border: '1px solid rgba(30,215,96,0.22)',
+            boxShadow: 'inset 0 1px 0 rgba(30,215,96,0.08)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <i className="ri-spotify-line" style={{ fontSize: 18, color: '#1ed760' }} />
-              <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 1, textTransform: 'uppercase' }}>spotify</span>
+              <i className="ri-spotify-line" style={{ fontSize: 16, color: '#1ed760' }} />
+              <span style={{ fontSize: 8, color: 'rgba(245,234,216,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>spotify</span>
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <div style={{ width: 36, height: 36, borderRadius: 6, background: 'linear-gradient(135deg,#632024,#c4888c)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="ri-music-2-line" style={{ fontSize: 16, color: 'rgba(255,255,255,0.8)' }} />
+            <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                background: 'rgba(200,168,130,0.18)', backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(200,168,130,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}>
+                <i className="ri-music-2-line" style={{ fontSize: 14, color: 'rgba(245,234,216,0.85)' }} />
               </div>
               <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontSize: 11, color: '#fff', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>your playlist</p>
-                <p style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)', margin: 0 }}>connect spotify</p>
+                <p style={{ fontSize: 10, color: '#f5ead8', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>your playlist</p>
+                <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.4)', margin: 0 }}>connect spotify</p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 2 }}>
-              <i className="ri-skip-back-line" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }} />
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1ed760', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <i className="ri-play-fill" style={{ fontSize: 14, color: '#000' }} />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <i className="ri-skip-back-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.55)', cursor: 'pointer' }} />
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', background: '#1ed760',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                boxShadow: '0 0 10px rgba(30,215,96,0.4)'
+              }}>
+                <i className="ri-play-fill" style={{ fontSize: 13, color: '#000' }} />
               </div>
-              <i className="ri-skip-forward-line" style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }} />
+              <i className="ri-skip-forward-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.55)', cursor: 'pointer' }} />
             </div>
           </div>
         </div>
-        <Slider label="Display" icon="ri-sun-fill" value={brightness} onChange={setBrightness} />
-        <Slider label="Sound" icon="ri-volume-up-line" value={volume} onChange={setVolume} />
-        <div style={{ textAlign: 'center', paddingTop: 2 }}>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', cursor: 'default', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 14px' }}>
-            Edit Controls
-          </span>
+
+        {/* Brightness */}
+        <div style={{ ...glass, padding: '12px 16px', boxShadow: 'inset 0 1px 0 rgba(255,235,200,0.10)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <p style={{ fontSize: 11, color: 'rgba(245,234,216,0.7)', margin: 0, fontFamily: 'Georgia, serif' }}>Brightness</p>
+            <p style={{ fontSize: 10, color: 'rgba(200,168,130,0.7)', margin: 0 }}>{brightness}%</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="ri-sun-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.5)' }} />
+            <input type="range" min="0" max="100" value={brightness} onChange={e => setBrightness(+e.target.value)}
+              style={{ flex: 1, accentColor: '#c8a882', cursor: 'pointer' }} />
+            <i className="ri-sun-fill" style={{ fontSize: 13, color: '#c8a882' }} />
+          </div>
         </div>
+
+        {/* Sound */}
+        <div style={{ ...glass, padding: '12px 16px', boxShadow: 'inset 0 1px 0 rgba(255,235,200,0.10)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+            <p style={{ fontSize: 11, color: 'rgba(245,234,216,0.7)', margin: 0, fontFamily: 'Georgia, serif' }}>Sound</p>
+            <p style={{ fontSize: 10, color: 'rgba(200,168,130,0.7)', margin: 0 }}>{volume}%</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="ri-volume-mute-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.5)' }} />
+            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(+e.target.value)}
+              style={{ flex: 1, accentColor: '#c8a882', cursor: 'pointer' }} />
+            <i className="ri-volume-up-line" style={{ fontSize: 13, color: '#c8a882' }} />
+          </div>
+        </div>
+
       </div>
     </div>
   )
 }
 
-// ── HOME PAGE ──
 export default function Home() {
   const navigate = useNavigate()
   const [activeFolder, setActiveFolder] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const [profilePhoto, setProfilePhoto] = useState(null)
+  const photoInputRef = useRef(null)
   const user = useUserStore((s) => s.user)
+  const wraps = useMemoryStore((s) => s.wraps)
   const username = user?.name || user?.username || 'guest'
+
+  const activeWraps = Object.keys(wraps).length
+  const foldersFilled = Object.values(wraps).reduce((total, yr) =>
+    total + Object.values(yr).filter(f => f.text || f.photos?.length > 0).length, 0)
+  const photosSaved = Object.values(wraps).reduce((total, yr) =>
+    total + Object.values(yr).reduce((t, f) => t + (f.photos?.length || 0), 0), 0)
   const [time, setTime] = useState(new Date())
 
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-
-  const handleMouseMove = useCallback((e) => {
-    setMousePos({ x: e.clientX, y: e.clientY })
-  }, [])
+  useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
+  const handleMouseMove = useCallback((e) => setMousePos({ x: e.clientX, y: e.clientY }), [])
 
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const h = time.getHours()
-  const m = String(time.getMinutes()).padStart(2, '0')
+  const h = time.getHours(), m = String(time.getMinutes()).padStart(2, '0')
   const ampm = h >= 12 ? 'PM' : 'AM'
 
   const widget = {
-    background: 'rgba(20,10,8,0.45)',
+    background: 'rgba(59,35,20,0.52)',
     backdropFilter: 'blur(28px) saturate(180%)',
     WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-    border: '1px solid rgba(255,255,255,0.12)',
+    border: '1px solid rgba(200,168,130,0.18)',
     borderRadius: 18,
-    color: '#f2e0dc',
+    color: '#f5ead8',
     fontFamily: 'Georgia, serif',
   }
 
   const FOLDERS = [
-    { name: 'my_pov', type: 'folder', color: '#c4888c' },
-    { name: 'moments', type: 'folder', color: '#b07478' },
-    { name: 'peeps', type: 'icon', img: '/icon-peeps.png' },
-    { name: 'triptrip', type: 'icon', img: '/icon-triptrip.png' },
-    { name: 'mood', type: 'icon', img: '/icon-mood.png' },
-    { name: 'challenges', type: 'icon', img: '/icon-challenges.png' },
+    { name: 'my_pov', type: 'folder', color: '#c8a882' },
+    { name: 'moments', type: 'folder', color: '#a07850' },
+    { name: 'peeps', type: 'folder', color: '#b8956a' },
+    { name: 'triptrip', type: 'folder', color: '#8b6240' },
+    { name: 'mood', type: 'folder', color: '#d4b896' },
+    { name: 'challenges', type: 'folder', color: '#7a5535' },
   ]
 
   return (
@@ -466,127 +508,208 @@ export default function Home() {
       style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', fontFamily: 'Georgia, serif' }}>
 
       {/* Wallpaper */}
-      <img src="/bg-flower.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(135deg, rgba(99,32,36,0.55) 0%, rgba(74,24,32,0.40) 50%, rgba(138,58,63,0.32) 100%)' }} />
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, transparent 35%, rgba(40,10,12,0.50) 100%)' }} />
+      <img src="/bg-lily.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom' }} />
+      {/* Coffee/tan overlay */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'linear-gradient(135deg, rgba(59,35,20,0.62) 0%, rgba(107,66,38,0.48) 50%, rgba(139,94,60,0.38) 100%)'
+      }} />
+      {/* Vignette */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, transparent 35%, rgba(30,14,6,0.55) 100%)'
+      }} />
 
       <MenuBar mousePos={mousePos} navigate={navigate} username={username} />
 
-      {/* ── DESKTOP LAYOUT ── */}
+      {/* DESKTOP LAYOUT */}
       <div style={{
-        position: 'absolute', top: 38, left: 0, right: 0, bottom: 70,
-        display: 'flex', alignItems: 'stretch', padding: '16px 20px', gap: 16,
+        position: 'absolute', top: 30, left: 0, right: 0, bottom: 62,
+        display: 'flex', alignItems: 'stretch',
+        padding: 'clamp(8px,1.5vh,16px) clamp(10px,1.5vw,20px)',
+        gap: 'clamp(8px,1.2vw,16px)',
       }}>
 
-        {/* LEFT COLUMN — widgets */}
-        <div style={{ width: 210, display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+        {/* LEFT — widgets */}
+        <div style={{ width: 'clamp(160px,17vw,220px)', display: 'flex', flexDirection: 'column', gap: 'clamp(6px,1vh,10px)', flexShrink: 0, overflow: 'hidden' }}>
 
-          {/* Clock widget */}
-          <div style={{ ...widget, padding: '18px 20px' }}>
-            <p style={{ fontSize: 9, letterSpacing: 2.5, color: 'rgba(242,224,220,0.5)', textTransform: 'uppercase', marginBottom: 6 }}>local time</p>
-            <p style={{ fontSize: 36, fontWeight: 700, color: '#f2e0dc', lineHeight: 1, letterSpacing: -1 }}>
+          {/* Clock */}
+          <div style={{ ...widget, padding: 'clamp(8px,1.2vh,14px) clamp(10px,1.1vw,18px)', flexShrink: 0 }}>
+            <p style={{ fontSize: 'clamp(7px,0.65vw,9px)', letterSpacing: 2, color: 'rgba(200,168,130,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>local time</p>
+            <p style={{ fontSize: 'clamp(22px,2.8vw,36px)', fontWeight: 700, color: '#f5ead8', lineHeight: 1, letterSpacing: -1, margin: 0 }}>
               {String(h % 12 || 12).padStart(2, '0')}:{m}
-              <span style={{ fontSize: 14, fontWeight: 400, marginLeft: 6, color: 'rgba(242,224,220,0.6)' }}>{ampm}</span>
+              <span style={{ fontSize: 'clamp(10px,0.9vw,14px)', fontWeight: 400, marginLeft: 5, color: 'rgba(200,168,130,0.7)' }}>{ampm}</span>
             </p>
-            <p style={{ fontSize: 11, color: 'rgba(242,224,220,0.55)', marginTop: 4 }}>
+            <p style={{ fontSize: 'clamp(9px,0.75vw,11px)', color: 'rgba(200,168,130,0.65)', marginTop: 3, marginBottom: 0 }}>
               {days[time.getDay()]}, {time.getDate()} {months[time.getMonth()]}
             </p>
           </div>
 
-          {/* Quote widget */}
-          <div style={{ ...widget, padding: '16px 18px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <i className="ri-double-quotes-l" style={{ fontSize: 18, color: '#c4888c' }} />
-              <span style={{ fontSize: 9, letterSpacing: 2, color: 'rgba(242,224,220,0.5)', textTransform: 'uppercase' }}>note to self</span>
+          {/* Quote */}
+          <div style={{ ...widget, padding: 'clamp(8px,1vh,14px) clamp(10px,1vw,16px)', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 7 }}>
+              <i className="ri-double-quotes-l" style={{ fontSize: 'clamp(13px,1.1vw,18px)', color: '#c8a882' }} />
+              <span style={{ fontSize: 'clamp(7px,0.6vw,9px)', letterSpacing: 2, color: 'rgba(200,168,130,0.55)', textTransform: 'uppercase' }}>note to self</span>
             </div>
-            <p style={{ fontSize: 13, color: '#f2e0dc', lineHeight: 1.7, fontStyle: 'italic' }}>
+            <p style={{ fontSize: 'clamp(10px,0.85vw,13px)', color: '#f5ead8', lineHeight: 1.6, fontStyle: 'italic', margin: 0 }}>
               "capture the moments that make you feel alive."
             </p>
           </div>
 
-          {/* Quick nav widget */}
-          <div style={{ ...widget, padding: '14px 16px' }}>
-            <p style={{ fontSize: 9, letterSpacing: 2.5, color: 'rgba(242,224,220,0.5)', textTransform: 'uppercase', marginBottom: 10 }}>quick nav</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Quick nav */}
+          <div style={{ ...widget, padding: 'clamp(8px,1vh,12px) clamp(10px,1vw,14px)', flexShrink: 0 }}>
+            <p style={{ fontSize: 'clamp(7px,0.6vw,9px)', letterSpacing: 2, color: 'rgba(200,168,130,0.55)', textTransform: 'uppercase', marginBottom: 8 }}>quick nav</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
               {[
                 { icon: 'ri-treasure-map-line', label: 'Treasure Chest', path: '/treasure-chest' },
                 { icon: 'ri-delete-bin-2-line', label: 'Dump It', path: '/dump-it' },
                 { icon: 'ri-book-open-line', label: 'Recap', path: '/recap' },
               ].map(item => (
                 <div key={item.label} onClick={() => navigate(item.path)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', borderRadius: 10, cursor: 'pointer', transition: 'background 0.15s' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(196,136,140,0.18)'}
-                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                >
-                  <i className={item.icon} style={{ fontSize: 15, color: '#c4888c' }} />
-                  <span style={{ fontSize: 12, color: 'rgba(242,224,220,0.85)' }}>{item.label}</span>
-                  <i className="ri-arrow-right-s-line" style={{ fontSize: 13, color: 'rgba(242,224,220,0.3)', marginLeft: 'auto' }} />
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 'clamp(4px,0.6vh,7px) 8px', borderRadius: 10, cursor: 'pointer', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,168,130,0.18)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <i className={item.icon} style={{ fontSize: 'clamp(11px,0.9vw,15px)', color: '#c8a882' }} />
+                  <span style={{ fontSize: 'clamp(9px,0.8vw,12px)', color: 'rgba(245,234,216,0.85)' }}>{item.label}</span>
+                  <i className="ri-arrow-right-s-line" style={{ fontSize: 12, color: 'rgba(200,168,130,0.35)', marginLeft: 'auto' }} />
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Stats widget */}
-          <div style={{ ...widget, padding: '14px 16px', flex: 1 }}>
-            <p style={{ fontSize: 9, letterSpacing: 2.5, color: 'rgba(242,224,220,0.5)', textTransform: 'uppercase', marginBottom: 12 }}>year wrap</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {/* Stats */}
+          <div style={{ ...widget, padding: 'clamp(8px,1vh,12px) clamp(10px,1vw,14px)', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            <p style={{ fontSize: 'clamp(7px,0.6vw,9px)', letterSpacing: 2, color: 'rgba(200,168,130,0.55)', textTransform: 'uppercase', marginBottom: 8 }}>year wrap</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(5px,0.8vh,8px)' }}>
               {[
-                { icon: 'ri-calendar-line', label: 'Active wraps', val: '4' },
-                { icon: 'ri-folder-open-line', label: 'Folders filled', val: '6' },
-                { icon: 'ri-image-line', label: 'Photos saved', val: '0' },
+                { icon: 'ri-calendar-line', label: 'Active wraps', val: String(activeWraps) },
+                { icon: 'ri-folder-open-line', label: 'Folders filled', val: String(foldersFilled) },
+                { icon: 'ri-image-line', label: 'Photos saved', val: String(photosSaved) },
               ].map(s => (
-                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <i className={s.icon} style={{ fontSize: 14, color: '#c4888c', width: 18 }} />
-                  <span style={{ fontSize: 11, color: 'rgba(242,224,220,0.65)', flex: 1 }}>{s.label}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#f2e0dc' }}>{s.val}</span>
+                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className={s.icon} style={{ fontSize: 'clamp(11px,0.9vw,14px)', color: '#c8a882', width: 16, flexShrink: 0 }} />
+                  <span style={{ fontSize: 'clamp(9px,0.75vw,11px)', color: 'rgba(200,168,130,0.7)', flex: 1 }}>{s.label}</span>
+                  <span style={{ fontSize: 'clamp(11px,0.85vw,13px)', fontWeight: 700, color: '#f5ead8' }}>{s.val}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* CENTER — polaroid */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ transform: 'rotate(1.5deg)', zIndex: 12 }}>
+        {/* CENTER — layered polaroid + note + envelope */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
+          <div style={{ position: 'relative', width: 'clamp(220px,28vw,380px)', height: 'clamp(240px,30vw,400px)' }}>
+
+            {/* Kraft envelope — back layer */}
             <div style={{
-              background: '#f2e0dc', padding: '10px 10px 32px',
-              boxShadow: '0 8px 40px rgba(74,24,32,0.5), 0 2px 8px rgba(0,0,0,0.2)', width: 160,
+              position: 'absolute', bottom: 0, left: '5%',
+              width: '72%', height: '62%',
+              background: 'linear-gradient(145deg, #c8a87a, #a8845a)',
+              borderRadius: 4,
+              transform: 'rotate(-8deg)',
+              boxShadow: '0 4px 18px rgba(59,35,20,0.35)',
+              zIndex: 1,
             }}>
+              {/* envelope flap */}
               <div style={{
-                width: '100%', height: 160,
-                background: 'linear-gradient(145deg, #e8c8cc, #d4a0a8)',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
-              }}>
-                <i className="ri-add-circle-line" style={{ fontSize: 32, color: '#632024' }} />
-                <span style={{ fontSize: 9, color: '#7a3038', textAlign: 'center', lineHeight: 1.5 }}>add your<br />photo</span>
-              </div>
-              <p style={{ textAlign: 'center', fontSize: 11, color: '#4a1820', marginTop: 10, fontWeight: 600 }}>{username}</p>
+                position: 'absolute', top: 0, left: 0, right: 0,
+                height: '45%',
+                background: 'linear-gradient(160deg, #b8946a, #9a7448)',
+                clipPath: 'polygon(0 0, 100% 0, 50% 100%)',
+                borderRadius: '4px 4px 0 0',
+              }} />
             </div>
+
+            {/* Note card — middle layer */}
+            <div style={{
+              position: 'absolute', bottom: '8%', left: 0,
+              width: '62%', height: '70%',
+              background: 'linear-gradient(145deg, #f5ead8, #ede0c8)',
+              borderRadius: 6,
+              transform: 'rotate(-5deg)',
+              boxShadow: '0 6px 20px rgba(59,35,20,0.25)',
+              zIndex: 2,
+              padding: 'clamp(10px,1.5vw,18px)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center',
+              overflow: 'hidden',
+            }}>
+              <p style={{
+                fontFamily: 'Georgia, serif', fontStyle: 'italic',
+                fontSize: 'clamp(9px,1vw,13px)', color: '#4a2e18',
+                lineHeight: 1.8, margin: 0,
+              }}>
+                always find<br />
+                time for the<br />
+                things that make<br />
+                you feel happy<br />
+                to be alive.
+              </p>
+              <div style={{ position: 'absolute', bottom: 8, right: 10, width: 18, height: 18, borderRadius: '50%', background: 'rgba(200,168,130,0.5)' }} />
+            </div>
+
+            {/* Polaroid — top layer, instax style */}
+            <div style={{
+              position: 'absolute', top: 0, right: '-8%',
+              width: '72%',
+              background: '#eeebe3',
+              padding: 'clamp(5px,0.6vw,8px) clamp(5px,0.6vw,8px) clamp(22px,2.8vh,36px)',
+              boxShadow: '0 8px 32px rgba(59,35,20,0.45), 0 2px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(200,180,150,0.25)',
+              transform: 'rotate(3deg)',
+              zIndex: 3,
+              cursor: 'pointer',
+              borderRadius: 2,
+            }} onClick={() => photoInputRef.current?.click()}>
+              <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+                onChange={e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const reader = new FileReader()
+                  reader.onload = ev => setProfilePhoto(ev.target.result)
+                  reader.readAsDataURL(file)
+                }} />
+
+              {/* Photo area */}
+              <div style={{
+                width: '100%', paddingBottom: '130%',
+                position: 'relative',
+                background: profilePhoto ? 'transparent' : 'linear-gradient(145deg, #d4b896, #b8906a)',
+                overflow: 'hidden',
+              }}>
+                {profilePhoto
+                  ? <img src={profilePhoto} alt="profile" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.05) saturate(0.88)' }} />
+                  : (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                      <i className="ri-add-circle-line" style={{ fontSize: 'clamp(18px,2vw,28px)', color: '#6b4226' }} />
+                      <span style={{ fontSize: 'clamp(7px,0.6vw,9px)', color: '#4a2e18', textAlign: 'center', lineHeight: 1.4 }}>add photo</span>
+                    </div>
+                  )
+                }
+                {/* Red timestamp */}
+                <span style={{
+                  position: 'absolute', bottom: 5, right: 7,
+                  fontSize: 'clamp(6px,0.55vw,8px)', color: '#d94020',
+                  fontFamily: 'monospace', letterSpacing: 0.5, opacity: 0.9,
+                }}>
+                  {String(new Date().getMonth() + 1).padStart(2, '0')} {String(new Date().getDate()).padStart(2, '0')} '{String(new Date().getFullYear()).slice(2)}
+                </span>
+              </div>
+
+              {/* Bottom label */}
+              <p style={{
+                textAlign: 'center', fontSize: 'clamp(8px,0.7vw,10px)',
+                color: '#5a3e28', marginTop: 7, fontWeight: 500, marginBottom: 0,
+                fontFamily: 'Georgia, serif', letterSpacing: 0.5, opacity: 0.75,
+              }}>{username}</p>
+            </div>
+
           </div>
         </div>
 
-        {/* RIGHT COLUMN — desktop icons */}
-        <div style={{ width: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, paddingTop: 8, flexShrink: 0 }}>
-          {FOLDERS.map((item) => (
+        {/* RIGHT — desktop icons */}
+        <div style={{ width: 'clamp(65px,7.5vw,100px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'clamp(6px,1.2vh,16px)', flexShrink: 0 }}>
+          {FOLDERS.map(item => (
             <DesktopIcon key={item.name} label={item.name.replace('_', ' ')} onClick={() => setActiveFolder(item.name)}>
-              {item.type === 'folder'
-                ? <FolderSVG color={item.color} size={58} />
-                : (
-                  <div style={{
-                    width: 62, height: 62, borderRadius: 16,
-                    background: 'rgba(99,32,36,0.35)', backdropFilter: 'blur(8px)',
-                    border: '1px solid rgba(196,136,140,0.3)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 4px 16px rgba(74,24,32,0.4)', overflow: 'hidden',
-                  }}>
-                    <img src={item.img} alt={item.name} style={{ width: 44, height: 44, objectFit: 'contain' }}
-                      onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
-                    <div style={{ display: 'none', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="ri-image-line" style={{ fontSize: 22, color: '#c4888c' }} />
-                    </div>
-                  </div>
-                )
-              }
+              <FolderSVG color={item.color} size={Math.round(Math.min(52, Math.max(32, window.innerWidth * 0.036)))} />
             </DesktopIcon>
           ))}
         </div>
@@ -594,21 +717,26 @@ export default function Home() {
 
       {/* Dock */}
       <div style={{
-        position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
-        background: 'rgba(255,255,255,0.10)', backdropFilter: 'blur(28px) saturate(180%)',
+        position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
+        background: 'rgba(59,35,20,0.55)', backdropFilter: 'blur(28px) saturate(180%)',
         WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-        border: '1px solid rgba(255,255,255,0.18)',
-        borderRadius: 18, padding: '6px 16px',
-        display: 'flex', alignItems: 'flex-end', gap: 10,
-        boxShadow: '0 6px 24px rgba(74,24,32,0.35), inset 0 1px 0 rgba(255,255,255,0.15)',
+        border: '1px solid rgba(200,168,130,0.22)',
+        borderRadius: 16, padding: '5px 14px',
+        display: 'flex', alignItems: 'flex-end', gap: 0,
+        boxShadow: '0 6px 24px rgba(59,35,20,0.4), inset 0 1px 0 rgba(200,168,130,0.15)',
         zIndex: 50,
       }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginRight: 8 }}>
+          <DockIcon label="recap" onClick={() => navigate('/recap')} icon="ri-book-open-line" />
+          <DockIcon label="login" onClick={() => navigate('/login')} icon="ri-key-2-line" />
+        </div>
+        <div style={{ width: 1, height: 32, background: 'rgba(200,168,130,0.3)', alignSelf: 'center', margin: '0 8px' }} />
         <DockIcon label="home" onClick={() => { }} icon="ri-home-4-line" active />
-        <DockIcon label="dump it" onClick={() => navigate('/dump-it')} img="/icon-dump.png" />
-        <DockIcon label="treasure" onClick={() => navigate('/treasure-chest')} img="/icon-treasure.png" />
-        <DockIcon label="recap" onClick={() => navigate('/recap')} icon="ri-book-open-line" />
-        <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,0.25)', alignSelf: 'center', margin: '0 2px' }} />
-        <DockIcon label="login" onClick={() => navigate('/login')} icon="ri-key-2-line" />
+        <div style={{ width: 1, height: 32, background: 'rgba(200,168,130,0.3)', alignSelf: 'center', margin: '0 8px' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginLeft: 0 }}>
+          <DockIcon label="dump it" onClick={() => navigate('/dump-it')} icon="ri-delete-bin-2-line" />
+          <DockIcon label="treasure" onClick={() => navigate('/treasure-chest')} icon="ri-treasure-map-line" />
+        </div>
       </div>
 
       {activeFolder && <FolderModal name={activeFolder} onClose={() => setActiveFolder(null)} />}

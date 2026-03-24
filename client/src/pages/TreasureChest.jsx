@@ -334,7 +334,7 @@ export default function TreasureChest() {
                     <i className="ri-arrow-left-line" style={{ fontSize: 16 }} /> home
                 </button>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <img src="/icon-treasure.png" alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+                    <i className="ri-treasure-map-line" style={{ fontSize: 22, color: "#c4a07a" }} />
                     <span style={{ fontSize: 15, color: "#f5e8d0", fontWeight: 700, letterSpacing: 0.5 }}>treasure chest</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
