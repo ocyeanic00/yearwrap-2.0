@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import html2canvas from 'html2canvas'
 import FolderModal from '../components/memory/FolderModal'
 import useUserStore from '../store/userStore'
 import useMemoryStore from '../store/memoryStore'
+import { spotifyService } from '../services/spotifyService'
 
 // TAN & COFFEE PALETTE
 // #3b2314 — dark espresso
@@ -243,9 +245,274 @@ function ControlCenter({ onClose, navigate }) {
   const [screenshot, setScreenshot] = useState(false)
   const [brightness, setBrightness] = useState(100)
   const [volume, setVolume] = useState(50)
+  const [weather, setWeather] = useState(null)
+  const [loading, setLoading] = useState(true)
+  
+  // Spotify state
+  const [spotifyToken, setSpotifyToken] = useState(null)
+  const [currentTrack, setCurrentTrack] = useState(null)
+  const [isPlaying, setIsPlaying] = useState(false)
 
   // Brightness overlay ref
   const brightnessRef = useRef(null)
+
+  // Check for Spotify token on mount
+  useEffect(() => {
+    const token = spotifyService.getToken()
+    console.log('Checking for Spotify token:', token ? 'Found' : 'Not found')
+    if (token) {
+      setSpotifyToken(token)
+      fetchCurrentTrack(token)
+    }
+  }, [])
+
+  // Fetch current track
+  const fetchCurrentTrack = async (token) => {
+    try {
+      console.log('Fetching current track...')
+      let track = await spotifyService.getCurrentlyPlaying(token)
+      console.log('Currently playing:', track)
+      
+      if (!track || !track.item) {
+        // If nothing playing, get recently played
+        console.log('Nothing playing, fetching recently played...')
+        const recent = await spotifyService.getRecentlyPlayed(token)
+        console.log('Recently played:', recent)
+        if (recent) {
+          track = { item: recent.track, is_playing: false }
+        }
+      }
+      
+      if (track && track.item) {
+        console.log('Setting track:', track.item.name)
+        setCurrentTrack(track.item)
+        setIsPlaying(track.is_playing || false)
+      }
+    } catch (error) {
+      console.error('Spotify fetch error:', error)
+      // Token might be expired
+      if (error.message.includes('401')) {
+        console.log('Token expired, clearing...')
+        spotifyService.clearToken()
+        setSpotifyToken(null)
+      }
+    }
+  }
+
+  // Connect to Spotify
+  const handleSpotifyConnect = () => {
+    console.log('Connecting to Spotify...')
+    const authUrl = spotifyService.getAuthUrl()
+    console.log('Auth URL:', authUrl)
+    window.location.href = authUrl
+  }
+
+  // Toggle playback
+  const handlePlayPause = async () => {
+    if (!spotifyToken) return
+    try {
+      await spotifyService.togglePlayback(spotifyToken, isPlaying)
+      setIsPlaying(!isPlaying)
+    } catch (error) {
+      console.error('Playback error:', error)
+    }
+  }
+
+  // Skip next
+  const handleNext = async () => {
+    if (!spotifyToken) return
+    try {
+      await spotifyService.skipNext(spotifyToken)
+      setTimeout(() => fetchCurrentTrack(spotifyToken), 500)
+    } catch (error) {
+      console.error('Skip error:', error)
+    }
+  }
+
+  // Skip previous
+  const handlePrevious = async () => {
+    if (!spotifyToken) return
+    try {
+      await spotifyService.skipPrevious(spotifyToken)
+      setTimeout(() => fetchCurrentTrack(spotifyToken), 500)
+    } catch (error) {
+      console.error('Skip error:', error)
+    }
+  }
+
+  // Fetch weather data
+  useEffect(() => {
+    const fetchWeather = async () => {
+      try {
+        // Get user's location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } = position.coords
+              console.log('Got location:', latitude, longitude)
+              
+              // Use Open-Meteo API (free, no API key needed)
+              const response = await fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4`
+              )
+              const data = await response.json()
+              console.log('Weather data:', data)
+              
+              if (data.current) {
+                // Current weather
+                const current = data.current
+                const today = data.daily
+                
+                // Map weather codes to descriptions and icons
+                const getWeatherInfo = (code) => {
+                  const weatherCodes = {
+                    0: { desc: 'Clear sky', icon: 'ri-sun-line' },
+                    1: { desc: 'Mainly clear', icon: 'ri-sun-line' },
+                    2: { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' },
+                    3: { desc: 'Overcast', icon: 'ri-cloudy-line' },
+                    45: { desc: 'Foggy', icon: 'ri-mist-line' },
+                    48: { desc: 'Foggy', icon: 'ri-mist-line' },
+                    51: { desc: 'Light drizzle', icon: 'ri-drizzle-line' },
+                    53: { desc: 'Drizzle', icon: 'ri-drizzle-line' },
+                    55: { desc: 'Heavy drizzle', icon: 'ri-drizzle-line' },
+                    61: { desc: 'Light rain', icon: 'ri-rainy-line' },
+                    63: { desc: 'Rain', icon: 'ri-rainy-line' },
+                    65: { desc: 'Heavy rain', icon: 'ri-heavy-showers-line' },
+                    71: { desc: 'Light snow', icon: 'ri-snowy-line' },
+                    73: { desc: 'Snow', icon: 'ri-snowy-line' },
+                    75: { desc: 'Heavy snow', icon: 'ri-snowy-line' },
+                    80: { desc: 'Rain showers', icon: 'ri-showers-line' },
+                    81: { desc: 'Rain showers', icon: 'ri-showers-line' },
+                    82: { desc: 'Heavy rain showers', icon: 'ri-heavy-showers-line' },
+                    95: { desc: 'Thunderstorm', icon: 'ri-thunderstorms-line' },
+                    96: { desc: 'Thunderstorm', icon: 'ri-thunderstorms-line' },
+                    99: { desc: 'Thunderstorm', icon: 'ri-thunderstorms-line' }
+                  }
+                  return weatherCodes[code] || { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' }
+                }
+                
+                const currentWeather = getWeatherInfo(current.weather_code)
+                const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                
+                setWeather({
+                  temp: Math.round(current.temperature_2m),
+                  description: currentWeather.desc,
+                  icon: currentWeather.icon,
+                  forecast: [1, 2, 3].map(i => {
+                    const date = new Date()
+                    date.setDate(date.getDate() + i)
+                    const dayName = days[date.getDay()]
+                    const weatherInfo = getWeatherInfo(today.weather_code[i])
+                    return {
+                      day: dayName,
+                      temp: Math.round(today.temperature_2m_max[i]),
+                      icon: weatherInfo.icon
+                    }
+                  })
+                })
+              }
+              setLoading(false)
+            },
+            async (error) => {
+              // Location denied or error, try IP-based location
+              console.log('Geolocation error:', error.message)
+              try {
+                // Use IP-based location as fallback
+                const ipResponse = await fetch('https://ipapi.co/json/')
+                const ipData = await ipResponse.json()
+                console.log('IP location:', ipData)
+                
+                const response = await fetch(
+                  `https://api.open-meteo.com/v1/forecast?latitude=${ipData.latitude}&longitude=${ipData.longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4`
+                )
+                const data = await response.json()
+                
+                if (data.current) {
+                  const current = data.current
+                  const today = data.daily
+                  
+                  const getWeatherInfo = (code) => {
+                    const weatherCodes = {
+                      0: { desc: 'Clear sky', icon: 'ri-sun-line' },
+                      1: { desc: 'Mainly clear', icon: 'ri-sun-line' },
+                      2: { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' },
+                      3: { desc: 'Overcast', icon: 'ri-cloudy-line' },
+                      61: { desc: 'Light rain', icon: 'ri-rainy-line' },
+                      63: { desc: 'Rain', icon: 'ri-rainy-line' },
+                      80: { desc: 'Rain showers', icon: 'ri-showers-line' }
+                    }
+                    return weatherCodes[code] || { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' }
+                  }
+                  
+                  const currentWeather = getWeatherInfo(current.weather_code)
+                  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+                  
+                  setWeather({
+                    temp: Math.round(current.temperature_2m),
+                    description: currentWeather.desc,
+                    icon: currentWeather.icon,
+                    forecast: [1, 2, 3].map(i => {
+                      const date = new Date()
+                      date.setDate(date.getDate() + i)
+                      const dayName = days[date.getDay()]
+                      const weatherInfo = getWeatherInfo(today.weather_code[i])
+                      return {
+                        day: dayName,
+                        temp: Math.round(today.temperature_2m_max[i]),
+                        icon: weatherInfo.icon
+                      }
+                    })
+                  })
+                }
+              } catch (ipError) {
+                console.error('IP location error:', ipError)
+                // Final fallback to default
+                setWeather({
+                  temp: 24,
+                  description: 'Partly cloudy',
+                  icon: 'ri-sun-cloudy-line',
+                  forecast: [
+                    { day: 'Mon', temp: 26, icon: 'ri-sun-line' },
+                    { day: 'Tue', temp: 21, icon: 'ri-drizzle-line' },
+                    { day: 'Wed', temp: 19, icon: 'ri-cloudy-line' }
+                  ]
+                })
+              }
+              setLoading(false)
+            },
+            {
+              enableHighAccuracy: false,
+              timeout: 5000,
+              maximumAge: 0
+            }
+          )
+        } else {
+          console.log('Geolocation not supported')
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Weather fetch error:', error)
+        setLoading(false)
+      }
+    }
+    
+    fetchWeather()
+  }, [])
+
+  // Helper function to map weather conditions to icons
+  const getWeatherIcon = (condition) => {
+    const icons = {
+      'Clear': 'ri-sun-line',
+      'Clouds': 'ri-cloudy-line',
+      'Rain': 'ri-rainy-line',
+      'Drizzle': 'ri-drizzle-line',
+      'Thunderstorm': 'ri-thunderstorms-line',
+      'Snow': 'ri-snowy-line',
+      'Mist': 'ri-mist-line',
+      'Fog': 'ri-foggy-line'
+    }
+    return icons[condition] || 'ri-sun-cloudy-line'
+  }
 
   // Apply brightness via a dark overlay
   useEffect(() => {
@@ -268,30 +535,65 @@ function ControlCenter({ onClose, navigate }) {
     els.forEach(el => { el.volume = volume / 100 })
   }, [volume])
 
-  // AirDrop toggle — share when turning on
-  const handleAirdrop = () => {
+  // AirDrop toggle — copy link to clipboard when turning on
+  const handleAirdrop = async () => {
     const next = !airdrop
     setAirdrop(next)
-    if (next && navigator.share) {
-      navigator.share({ title: 'YearWrap', text: 'Check out my year wrap!', url: window.location.href }).catch(() => { })
+    if (next) {
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        // Show a brief notification
+        const notification = document.createElement('div')
+        notification.textContent = 'Link copied to clipboard!'
+        notification.style.cssText = 'position:fixed;top:50px;left:50%;transform:translateX(-50%);background:rgba(59,35,20,0.95);color:#f5ead8;padding:12px 24px;borderRadius:12px;fontSize:13px;fontFamily:Georgia,serif;zIndex:9999;boxShadow:0 4px 20px rgba(0,0,0,0.3)'
+        document.body.appendChild(notification)
+        setTimeout(() => notification.remove(), 2000)
+      } catch (err) {
+        console.error('Failed to copy:', err)
+      }
     }
   }
 
-  // Screenshot — uses html2canvas if available, else triggers browser print
+  // Screenshot — capture page and copy to clipboard
+  // Screenshot — capture page and copy to clipboard
   const handleScreenshot = async () => {
     setScreenshot(true)
     try {
-      if (window.html2canvas) {
-        const canvas = await window.html2canvas(document.body)
-        const link = document.createElement('a')
-        link.download = 'yearwrap-screenshot.png'
-        link.href = canvas.toDataURL()
-        link.click()
-      } else {
-        window.print()
-      }
-    } catch {
-      window.print()
+      // Use html2canvas to capture the page
+      const canvas = await html2canvas(document.body, {
+        allowTaint: true,
+        useCORS: true,
+        scrollY: -window.scrollY,
+        scrollX: -window.scrollX,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight
+      })
+        
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        try {
+          // Copy to clipboard
+          await navigator.clipboard.write([
+            new ClipboardItem({ 'image/png': blob })
+          ])
+          
+          // Show notification
+          const notification = document.createElement('div')
+          notification.textContent = 'Screenshot copied to clipboard!'
+          notification.style.cssText = 'position:fixed;top:50px;left:50%;transform:translateX(-50%);background:rgba(59,35,20,0.95);color:#f5ead8;padding:12px 24px;borderRadius:12px;fontSize:13px;fontFamily:Georgia,serif;zIndex:9999;boxShadow:0 4px 20px rgba(0,0,0,0.3)'
+          document.body.appendChild(notification)
+          setTimeout(() => notification.remove(), 2000)
+        } catch (err) {
+          console.error('Failed to copy screenshot:', err)
+          // Fallback: download the image
+          const link = document.createElement('a')
+          link.download = 'yearwrap-screenshot.png'
+          link.href = canvas.toDataURL()
+          link.click()
+        }
+      })
+    } catch (err) {
+      console.error('Screenshot failed:', err)
     }
     setTimeout(() => setScreenshot(false), 1500)
   }
@@ -372,57 +674,106 @@ function ControlCenter({ onClose, navigate }) {
             boxShadow: 'inset 0 1px 0 rgba(255,235,200,0.10)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <i className="ri-sun-cloudy-line" style={{ fontSize: 20, color: '#e8c87a' }} />
+              <i className={weather?.icon || 'ri-sun-cloudy-line'} style={{ fontSize: 20, color: '#e8c87a' }} />
               <span style={{ fontSize: 8, color: 'rgba(245,234,216,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>weather</span>
             </div>
-            <p style={{ fontSize: 24, fontWeight: 700, color: '#f5ead8', margin: 0, lineHeight: 1 }}>24°</p>
-            <p style={{ fontSize: 9, color: 'rgba(200,168,130,0.7)', margin: 0 }}>Partly cloudy</p>
-            <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
-              {[{ d: 'Mon', i: 'ri-sun-line', t: '26°' }, { d: 'Tue', i: 'ri-drizzle-line', t: '21°' }, { d: 'Wed', i: 'ri-cloudy-line', t: '19°' }].map(w => (
-                <div key={w.d} style={{ flex: 1, textAlign: 'center' }}>
-                  <p style={{ fontSize: 7, color: 'rgba(200,168,130,0.5)', margin: 0 }}>{w.d}</p>
-                  <i className={w.i} style={{ fontSize: 10, color: '#c8a882' }} />
-                  <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.7)', margin: 0 }}>{w.t}</p>
+            {loading ? (
+              <p style={{ fontSize: 14, color: 'rgba(245,234,216,0.5)', margin: 0 }}>Loading...</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 24, fontWeight: 700, color: '#f5ead8', margin: 0, lineHeight: 1 }}>
+                  {weather?.temp || 24}°
+                </p>
+                <p style={{ fontSize: 9, color: 'rgba(200,168,130,0.7)', margin: 0, textTransform: 'capitalize' }}>
+                  {weather?.description || 'Partly cloudy'}
+                </p>
+                <div style={{ display: 'flex', gap: 3, marginTop: 4 }}>
+                  {(weather?.forecast || [
+                    { day: 'Mon', temp: 26, icon: 'ri-sun-line' },
+                    { day: 'Tue', temp: 21, icon: 'ri-drizzle-line' },
+                    { day: 'Wed', temp: 19, icon: 'ri-cloudy-line' }
+                  ]).map(w => (
+                    <div key={w.day} style={{ flex: 1, textAlign: 'center' }}>
+                      <p style={{ fontSize: 7, color: 'rgba(200,168,130,0.5)', margin: 0 }}>{w.day}</p>
+                      <i className={w.icon} style={{ fontSize: 10, color: '#c8a882' }} />
+                      <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.7)', margin: 0 }}>{w.temp}°</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
 
           {/* Spotify */}
-          <div style={{
+          <div onClick={!spotifyToken ? handleSpotifyConnect : undefined} style={{
             ...glass, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 6,
             border: '1px solid rgba(30,215,96,0.22)',
-            boxShadow: 'inset 0 1px 0 rgba(30,215,96,0.08)'
+            boxShadow: 'inset 0 1px 0 rgba(30,215,96,0.08)',
+            cursor: !spotifyToken ? 'pointer' : 'default'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <i className="ri-spotify-line" style={{ fontSize: 16, color: '#1ed760' }} />
               <span style={{ fontSize: 8, color: 'rgba(245,234,216,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>spotify</span>
             </div>
             <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-                background: 'rgba(200,168,130,0.18)', backdropFilter: 'blur(10px)',
-                border: '1px solid rgba(200,168,130,0.25)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <i className="ri-music-2-line" style={{ fontSize: 14, color: 'rgba(245,234,216,0.85)' }} />
-              </div>
-              <div style={{ overflow: 'hidden' }}>
-                <p style={{ fontSize: 10, color: '#f5ead8', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>your playlist</p>
-                <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.4)', margin: 0 }}>connect spotify</p>
+              {currentTrack?.album?.images?.[0]?.url ? (
+                <img 
+                  src={currentTrack.album.images[0].url} 
+                  alt="Album"
+                  style={{
+                    width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                    objectFit: 'cover'
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: 'rgba(200,168,130,0.18)', backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(200,168,130,0.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}>
+                  <i className="ri-music-2-line" style={{ fontSize: 14, color: 'rgba(245,234,216,0.85)' }} />
+                </div>
+              )}
+              <div style={{ overflow: 'hidden', flex: 1 }}>
+                <p style={{ fontSize: 10, color: '#f5ead8', fontWeight: 600, margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentTrack?.name || 'your playlist'}
+                </p>
+                <p style={{ fontSize: 8, color: 'rgba(245,234,216,0.4)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentTrack?.artists?.[0]?.name || 'connect spotify'}
+                </p>
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-              <i className="ri-skip-back-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.55)', cursor: 'pointer' }} />
-              <div style={{
-                width: 26, height: 26, borderRadius: '50%', background: '#1ed760',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                boxShadow: '0 0 10px rgba(30,215,96,0.4)'
-              }}>
-                <i className="ri-play-fill" style={{ fontSize: 13, color: '#000' }} />
+            {spotifyToken && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <i 
+                  className="ri-skip-back-line" 
+                  onClick={handlePrevious}
+                  style={{ fontSize: 13, color: 'rgba(200,168,130,0.85)', cursor: 'pointer', transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.target.style.color = '#c8a882'}
+                  onMouseLeave={e => e.target.style.color = 'rgba(200,168,130,0.85)'}
+                />
+                <div 
+                  onClick={handlePlayPause}
+                  style={{
+                    width: 26, height: 26, borderRadius: '50%', background: '#1ed760',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    boxShadow: '0 0 10px rgba(30,215,96,0.4)', transition: 'transform 0.15s'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                  <i className={isPlaying ? 'ri-pause-fill' : 'ri-play-fill'} style={{ fontSize: 13, color: '#000' }} />
+                </div>
+                <i 
+                  className="ri-skip-forward-line" 
+                  onClick={handleNext}
+                  style={{ fontSize: 13, color: 'rgba(200,168,130,0.85)', cursor: 'pointer', transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.target.style.color = '#c8a882'}
+                  onMouseLeave={e => e.target.style.color = 'rgba(200,168,130,0.85)'}
+                />
               </div>
-              <i className="ri-skip-forward-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.55)', cursor: 'pointer' }} />
-            </div>
+            )}
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import DumpIt from '../pages/DumpIt'
 import Recap from '../pages/Recap'
 import Login from '../pages/Login'
 import AboutMe from '../pages/AboutMe'
+import SpotifyCallback from '../pages/SpotifyCallback'
 
 function AppRoutes() {
   return (
@@ -20,6 +21,7 @@ function AppRoutes() {
       <Route path="/treasure-chest" element={<TreasureChest />} />
       <Route path="/dump-it" element={<DumpIt />} />
       <Route path="/recap" element={<Recap />} />
+      <Route path="/spotify/callback" element={<SpotifyCallback />} />
     </Routes>
   )
 }
