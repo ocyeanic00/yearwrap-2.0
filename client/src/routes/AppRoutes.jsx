@@ -7,6 +7,7 @@ import TreasureChest from '../pages/TreasureChest'
 import DumpIt from '../pages/DumpIt'
 import Recap from '../pages/Recap'
 import Login from '../pages/Login'
+import Signup from '../pages/Signup'
 import AboutMe from '../pages/AboutMe'
 
 function AppRoutes() {
@@ -14,6 +15,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/about-me" element={<AboutMe />} />
       <Route path="/add-memory" element={<AddMemory />} />

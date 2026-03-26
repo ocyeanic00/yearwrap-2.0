@@ -49,7 +49,7 @@ export default function DumpIt() {
             background: "none", border: "none", cursor: "pointer",
             color: "#c8a882", fontFamily: "Georgia, serif", display: "flex", alignItems: "center", gap: 6, fontSize: 13
           }}>
-            <i className="ri-arrow-left-line" style={{ fontSize: 16 }} /> back
+            <i className="ri-arrow-left-line" style={{ fontSize: 16 }} /> home
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <i className="ri-delete-bin-2-line" style={{ fontSize: 20, color: "#c8a882" }} />

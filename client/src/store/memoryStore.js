@@ -29,6 +29,15 @@ const useMemoryStore = create((set) => ({
       },
     })),
 
+  renameFolder: (year, oldName, newName) =>
+    set((state) => {
+      const yearFolders = { ...state.wraps[year] }
+      if (!yearFolders[oldName] || oldName === newName) return state
+      yearFolders[newName] = yearFolders[oldName]
+      delete yearFolders[oldName]
+      return { wraps: { ...state.wraps, [year]: yearFolders } }
+    }),
+
   deleteWrap: (year) =>
     set((state) => {
       const folders = state.wraps[year]
