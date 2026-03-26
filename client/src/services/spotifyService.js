@@ -1,5 +1,5 @@
 const CLIENT_ID = 'f461a926b5c04f019a9944307def0d03'
-const REDIRECT_URI = 'http://localhost:3000/spotify/callback'
+const REDIRECT_URI = 'http://127.0.0.1:3000/spotify/callback'
 const SCOPES = [
   'user-read-currently-playing',
   'user-read-playback-state',
@@ -118,6 +118,15 @@ export const spotifyService = {
   skipPrevious: async (token) => {
     const response = await fetch('https://api.spotify.com/v1/me/player/previous', {
       method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    return response.ok
+  },
+
+  // Set volume (0-100)
+  setVolume: async (token, volumePercent) => {
+    const response = await fetch(`https://api.spotify.com/v1/me/player/volume?volume_percent=${volumePercent}`, {
+      method: 'PUT',
       headers: { 'Authorization': `Bearer ${token}` }
     })
     return response.ok

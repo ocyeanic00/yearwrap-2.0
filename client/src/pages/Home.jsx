@@ -340,6 +340,19 @@ function ControlCenter({ onClose, navigate }) {
     }
   }
 
+  // Handle volume change
+  const handleVolumeChange = async (newVolume) => {
+    setVolume(newVolume)
+    // Also update Spotify volume if connected
+    if (spotifyToken) {
+      try {
+        await spotifyService.setVolume(spotifyToken, newVolume)
+      } catch (error) {
+        console.error('Spotify volume error:', error)
+      }
+    }
+  }
+
   // Fetch weather data
   useEffect(() => {
     const fetchWeather = async () => {
@@ -705,11 +718,11 @@ function ControlCenter({ onClose, navigate }) {
           </div>
 
           {/* Spotify */}
-          <div onClick={!spotifyToken ? handleSpotifyConnect : undefined} style={{
+          <div onClick={!spotifyToken ? handleSpotifyConnect : () => window.open('https://open.spotify.com', '_blank')} style={{
             ...glass, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 6,
             border: '1px solid rgba(30,215,96,0.22)',
             boxShadow: 'inset 0 1px 0 rgba(30,215,96,0.08)',
-            cursor: !spotifyToken ? 'pointer' : 'default'
+            cursor: 'pointer'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <i className="ri-spotify-line" style={{ fontSize: 16, color: '#1ed760' }} />
@@ -745,7 +758,7 @@ function ControlCenter({ onClose, navigate }) {
               </div>
             </div>
             {spotifyToken && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }} onClick={e => e.stopPropagation()}>
                 <i 
                   className="ri-skip-back-line" 
                   onClick={handlePrevious}
@@ -799,7 +812,7 @@ function ControlCenter({ onClose, navigate }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <i className="ri-volume-mute-line" style={{ fontSize: 13, color: 'rgba(200,168,130,0.5)' }} />
-            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(+e.target.value)}
+            <input type="range" min="0" max="100" value={volume} onChange={e => handleVolumeChange(+e.target.value)}
               style={{ flex: 1, accentColor: '#c8a882', cursor: 'pointer' }} />
             <i className="ri-volume-up-line" style={{ fontSize: 13, color: '#c8a882' }} />
           </div>

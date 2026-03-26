@@ -4,7 +4,7 @@ const router = express.Router()
 
 const CLIENT_ID = 'f461a926b5c04f019a9944307def0d03'
 const CLIENT_SECRET = 'b743bb96b88244c7ab5431fd02797676'
-const REDIRECT_URI = 'http://localhost:3000/spotify/callback'
+const REDIRECT_URI = 'http://127.0.0.1:3000/spotify/callback'
 
 // Exchange authorization code for access token
 router.post('/token', async (req, res) => {
