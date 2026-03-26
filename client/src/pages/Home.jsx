@@ -5,6 +5,7 @@ import FolderModal from '../components/memory/FolderModal'
 import useUserStore from '../store/userStore'
 import useMemoryStore from '../store/memoryStore'
 import { spotifyService } from '../services/spotifyService'
+import Navbar from '../components/nav/Navbar'
 
 // TAN & COFFEE PALETTE
 // #3b2314 — dark espresso
@@ -13,28 +14,6 @@ import { spotifyService } from '../services/spotifyService'
 // #c8a882 — tan
 // #e8d5b8 — pale tan
 // #f5ead8 — cream
-
-const MENUS = {
-  File: [
-    { label: 'New Year Wrap', action: 'new' },
-    { label: 'Open Treasure Chest', action: 'treasure' },
-    { label: '─────────', disabled: true },
-    { label: 'Dump It', action: 'dump' },
-  ],
-  View: [
-    { label: 'Home', action: 'home' },
-    { label: 'Recap', action: 'recap' },
-    { label: 'Dashboard', action: 'dashboard' },
-  ],
-  Go: [
-    { label: 'Treasure Chest', action: 'treasure' },
-    { label: 'Dump It', action: 'dump' },
-    { label: 'Recap', action: 'recap' },
-    { label: 'Login', action: 'login' },
-  ],
-  Window: [{ label: 'Minimize', disabled: true }, { label: 'Zoom', disabled: true }],
-  Help: [{ label: 'About YearWrap', disabled: true }],
-}
 
 function shade(hex, p) {
   const n = parseInt(hex.replace('#', ''), 16)
@@ -137,106 +116,6 @@ function GooglyEyes({ mousePos }) {
         </div>
       ))}
     </div>
-  )
-}
-
-function LiveClock() {
-  const [time, setTime] = useState(new Date())
-  useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const h = time.getHours(), m = String(time.getMinutes()).padStart(2, '0')
-  const ampm = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12
-  return (
-    <span style={{ fontSize: 11, color: 'rgba(245,234,216,0.85)', whiteSpace: 'nowrap', letterSpacing: 0.1 }}>
-      {days[time.getDay()]} {time.getDate()} {months[time.getMonth()]} · {h12}:{m} {ampm}
-    </span>
-  )
-}
-
-function MenuBar({ mousePos, navigate, username }) {
-  const [openMenu, setOpenMenu] = useState(null)
-  const [ccOpen, setCcOpen] = useState(false)
-  const handleAction = (action) => {
-    setOpenMenu(null)
-    const routes = { home: '/', treasure: '/treasure-chest', dump: '/dump-it', recap: '/recap', login: '/login', dashboard: '/dashboard' }
-    if (routes[action]) navigate(routes[action])
-  }
-  return (
-    <>
-      <div style={{
-        position: 'absolute', top: 0, left: 0, right: 0, height: 30,
-        background: 'rgba(59,35,20,0.60)', backdropFilter: 'blur(32px) saturate(180%)',
-        WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-        borderBottom: '1px solid rgba(200,168,130,0.20)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 16px', zIndex: 100
-      }}
-        onClick={() => { setOpenMenu(null); setCcOpen(false) }}>
-
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-          <img src="/logo.png" alt="YearWrap" style={{ width: 28, height: 28, objectFit: 'contain', marginRight: 6, opacity: 1, filter: 'brightness(1.2)' }}
-            onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'inline' }} />
-          <i className="ri-leaf-line" style={{ fontSize: 16, color: '#c8a882', marginRight: 6, display: 'none' }} />
-          <span style={{ fontSize: 12, color: '#f5ead8', fontWeight: 700, padding: '0 8px', cursor: 'default' }}>YearWrap</span>
-          {Object.keys(MENUS).map(menuName => (
-            <div key={menuName} style={{ position: 'relative' }}>
-              <span onClick={() => setOpenMenu(openMenu === menuName ? null : menuName)}
-                style={{
-                  fontSize: 12, padding: '2px 8px', borderRadius: 4, cursor: 'default', userSelect: 'none',
-                  color: openMenu === menuName ? '#3b2314' : 'rgba(245,234,216,0.72)',
-                  background: openMenu === menuName ? 'rgba(245,234,216,0.88)' : 'transparent'
-                }}>
-                {menuName}
-              </span>
-              {openMenu === menuName && (
-                <div style={{
-                  position: 'absolute', top: 'calc(100% + 4px)', left: 0,
-                  background: 'rgba(40,22,10,0.96)', backdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(200,168,130,0.18)', borderRadius: 8, minWidth: 180,
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 200
-                }}>
-                  {MENUS[menuName].map((item, i) => (
-                    <div key={i} onClick={() => !item.disabled && handleAction(item.action)}
-                      style={{
-                        padding: '7px 16px', fontSize: 12, fontFamily: 'Georgia, serif',
-                        color: item.disabled ? 'rgba(245,234,216,0.3)' : 'rgba(245,234,216,0.88)',
-                        cursor: item.disabled ? 'default' : 'pointer',
-                        borderBottom: i < MENUS[menuName].length - 1 ? '1px solid rgba(200,168,130,0.08)' : 'none'
-                      }}
-                      onMouseEnter={e => { if (!item.disabled) e.currentTarget.style.background = 'rgba(107,66,38,0.6)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}>
-                      {item.label}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-          <span style={{ fontSize: 11, color: 'rgba(245,234,216,0.80)' }}>{username}</span>
-          <GooglyEyes mousePos={mousePos} />
-          <div style={{ width: 1, height: 14, background: 'rgba(200,168,130,0.3)' }} />
-          <div onClick={() => setCcOpen(o => !o)}
-            style={{
-              width: 28, height: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 5, background: ccOpen ? 'rgba(200,168,130,0.25)' : 'transparent', transition: 'background 0.15s'
-            }}>
-            <svg width="18" height="14" viewBox="0 0 18 14" fill="none">
-              <rect x="0" y="0" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
-              <rect x="11" y="0" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
-              <rect x="0" y="7" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
-              <rect x="11" y="7" width="7" height="5" rx="1.5" fill="rgba(245,234,216,0.85)" />
-            </svg>
-          </div>
-          <div style={{ width: 1, height: 14, background: 'rgba(200,168,130,0.3)' }} />
-          <LiveClock />
-        </div>
-      </div>
-      {ccOpen && <ControlCenter onClose={() => setCcOpen(false)} navigate={navigate} />}
-    </>
   )
 }
 
@@ -867,24 +746,68 @@ export default function Home() {
     { name: 'challenges', type: 'folder', color: '#7a5535' },
   ]
 
+  const [ccOpen, setCcOpen] = useState(false)
+
   return (
     <div onMouseMove={handleMouseMove}
       style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', fontFamily: 'Georgia, serif' }}>
+      <style>{`@media (max-width: 767px) { .yw-left-col { display: none !important; } }`}</style>
 
       {/* Wallpaper */}
       <img src="/bg-lily.jpg" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center bottom' }} />
-      {/* Coffee/tan overlay */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'linear-gradient(135deg, rgba(59,35,20,0.62) 0%, rgba(107,66,38,0.48) 50%, rgba(139,94,60,0.38) 100%)'
-      }} />
-      {/* Vignette */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, transparent 35%, rgba(30,14,6,0.55) 100%)'
-      }} />
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(135deg, rgba(59,35,20,0.62) 0%, rgba(107,66,38,0.48) 50%, rgba(139,94,60,0.38) 100%)' }} />
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse at center, transparent 35%, rgba(30,14,6,0.55) 100%)' }} />
 
-      <MenuBar mousePos={mousePos} navigate={navigate} username={username} />
+      <Navbar
+        navigate={navigate}
+        username={username}
+        mousePos={mousePos}
+        GooglyEyes={GooglyEyes}
+        ccOpen={ccOpen}
+        onCCToggle={() => setCcOpen(o => !o)}
+        widgets={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {/* Clock */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <i className="ri-time-line" style={{ fontSize: 15, color: '#c8a882' }} />
+              <span style={{ fontSize: 13, color: '#f5ead8', fontFamily: 'Georgia, serif', fontWeight: 600 }}>
+                {String(h % 12 || 12).padStart(2, '0')}:{m} {ampm}
+              </span>
+              <span style={{ fontSize: 11, color: 'rgba(200,168,130,0.55)', fontFamily: 'Georgia, serif' }}>
+                · {days[time.getDay()]}, {time.getDate()} {months[time.getMonth()]}
+              </span>
+            </div>
+            {/* Note to self */}
+            <div style={{ background: 'rgba(200,168,130,0.07)', borderRadius: 10, padding: '8px 12px', borderLeft: '2px solid rgba(200,168,130,0.35)' }}>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(245,234,216,0.65)', fontStyle: 'italic', fontFamily: 'Georgia, serif', lineHeight: 1.5 }}>
+                "capture the moments that make you feel alive."
+              </p>
+            </div>
+            {/* Quick nav pills */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[{ icon: 'ri-treasure-map-line', label: 'Treasure', path: '/treasure-chest' }, { icon: 'ri-delete-bin-2-line', label: 'Dump It', path: '/dump-it' }, { icon: 'ri-book-open-line', label: 'Recap', path: '/recap' }].map(item => (
+                <div key={item.label} onClick={() => navigate(item.path)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 11px', borderRadius: 20, background: 'rgba(200,168,130,0.12)', cursor: 'pointer', border: '1px solid rgba(200,168,130,0.18)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,168,130,0.22)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(200,168,130,0.12)'}>
+                  <i className={item.icon} style={{ fontSize: 11, color: '#c8a882' }} />
+                  <span style={{ fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif' }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+            {/* Stats row */}
+            <div style={{ display: 'flex', gap: 0, borderTop: '1px solid rgba(200,168,130,0.10)', paddingTop: 10 }}>
+              {[{ icon: 'ri-calendar-line', val: activeWraps, label: 'wraps' }, { icon: 'ri-folder-open-line', val: foldersFilled, label: 'folders' }, { icon: 'ri-image-line', val: photosSaved, label: 'photos' }].map((s, i) => (
+                <div key={s.label} style={{ flex: 1, textAlign: 'center', borderRight: i < 2 ? '1px solid rgba(200,168,130,0.10)' : 'none' }}>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#f5ead8', fontFamily: 'Georgia, serif' }}>{s.val}</p>
+                  <p style={{ margin: 0, fontSize: 9, color: 'rgba(200,168,130,0.5)', fontFamily: 'Georgia, serif', letterSpacing: 0.5 }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        }
+      />
+      {ccOpen && <ControlCenter onClose={() => setCcOpen(false)} navigate={navigate} />}
 
       {/* DESKTOP LAYOUT */}
       <div style={{
@@ -894,8 +817,8 @@ export default function Home() {
         gap: 'clamp(8px,1.2vw,16px)',
       }}>
 
-        {/* LEFT — widgets */}
-        <div style={{ width: 'clamp(160px,17vw,220px)', display: 'flex', flexDirection: 'column', gap: 'clamp(6px,1vh,10px)', flexShrink: 0, overflow: 'hidden' }}>
+        {/* LEFT — widgets (desktop only) */}
+        <div className="yw-left-col" style={{ width: 'clamp(160px,17vw,220px)', display: 'flex', flexDirection: 'column', gap: 'clamp(6px,1vh,10px)', flexShrink: 0, overflow: 'hidden' }}>
 
           {/* Clock */}
           <div style={{ ...widget, padding: 'clamp(8px,1.2vh,14px) clamp(10px,1.1vw,18px)', flexShrink: 0 }}>
@@ -1078,6 +1001,8 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+
 
       {/* Dock */}
       <div style={{
