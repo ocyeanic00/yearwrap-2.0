@@ -31,23 +31,59 @@ function FolderSVG({ color, size = 62 }) {
   )
 }
 
-function DesktopIcon({ children, label, onClick }) {
+function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRename }) {
   const [hovered, setHovered] = useState(false)
+  const [editValue, setEditValue] = useState(label)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.select()
+    }
+  }, [isEditing])
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      onRename(editValue)
+    } else if (e.key === 'Escape') {
+      setEditValue(label)
+      onRename(null)
+    }
+  }
+
   return (
-    <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <div onClick={onClick} onDoubleClick={onDoubleClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer',
         transform: hovered ? 'scale(1.1) translateY(-4px)' : 'scale(1)', transition: 'transform 0.15s'
       }}>
       {children}
-      <span style={{
-        fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif',
-        textShadow: '0 1px 6px rgba(59,35,20,0.9)',
-        background: hovered ? 'rgba(59,35,20,0.78)' : 'transparent',
-        padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3
-      }}>
-        {label}
-      </span>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type="text"
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => onRename(editValue)}
+          style={{
+            fontSize: 11, color: '#3b2314', fontFamily: 'Georgia, serif',
+            background: '#f5ead8',
+            padding: '2px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center',
+            border: '1px solid #c8a882', outline: 'none'
+          }}
+        />
+      ) : (
+        <span style={{
+          fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif',
+          textShadow: '0 1px 6px rgba(59,35,20,0.9)',
+          background: hovered ? 'rgba(59,35,20,0.78)' : 'transparent',
+          padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3
+        }}>
+          {label}
+        </span>
+      )}
     </div>
   )
 }
@@ -746,7 +782,20 @@ export default function Home() {
     { name: 'challenges', type: 'folder', color: '#7a5535' },
   ]
 
+  const [folderNames, setFolderNames] = useState(() => {
+    const saved = localStorage.getItem('yearwrap_folder_names')
+    return saved ? JSON.parse(saved) : FOLDERS.reduce((acc, f) => ({ ...acc, [f.name]: f.name.replace('_', ' ') }), {})
+  })
+  const [editingFolder, setEditingFolder] = useState(null)
   const [ccOpen, setCcOpen] = useState(false)
+
+  const handleRenameFolder = (folderKey, newName) => {
+    if (!newName.trim()) return
+    const updated = { ...folderNames, [folderKey]: newName.trim() }
+    setFolderNames(updated)
+    localStorage.setItem('yearwrap_folder_names', JSON.stringify(updated))
+    setEditingFolder(null)
+  }
 
   return (
     <div onMouseMove={handleMouseMove}
@@ -995,7 +1044,23 @@ export default function Home() {
         {/* RIGHT — desktop icons */}
         <div style={{ width: 'clamp(65px,7.5vw,100px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'clamp(6px,1.2vh,16px)', flexShrink: 0 }}>
           {FOLDERS.map(item => (
-            <DesktopIcon key={item.name} label={item.name.replace('_', ' ')} onClick={() => setActiveFolder(item.name)}>
+            <DesktopIcon 
+              key={item.name} 
+              label={folderNames[item.name] || item.name.replace('_', ' ')} 
+              onClick={() => setActiveFolder(item.name)}
+              onDoubleClick={(e) => {
+                e.stopPropagation()
+                setEditingFolder(item.name)
+              }}
+              isEditing={editingFolder === item.name}
+              onRename={(newName) => {
+                if (newName) {
+                  handleRenameFolder(item.name, newName)
+                } else {
+                  setEditingFolder(null)
+                }
+              }}
+            >
               <FolderSVG color={item.color} size={Math.round(Math.min(52, Math.max(32, window.innerWidth * 0.036)))} />
             </DesktopIcon>
           ))}
