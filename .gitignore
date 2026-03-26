@@ -1,0 +1,11 @@
+node_modules/
+.env
+dist/
+build/
+.vite/
+
+client/node_modules/
+server/node_modules/
+ai-service/node_modules/
+
+*.log
