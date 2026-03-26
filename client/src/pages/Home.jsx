@@ -31,7 +31,7 @@ function FolderSVG({ color, size = 62 }) {
   )
 }
 
-function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRename }) {
+function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRename, onIconClick }) {
   const [hovered, setHovered] = useState(false)
   const [editValue, setEditValue] = useState(label)
   const inputRef = useRef(null)
@@ -53,12 +53,14 @@ function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRen
   }
 
   return (
-    <div onClick={onClick} onDoubleClick={onDoubleClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <div onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, cursor: 'pointer',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
         transform: hovered ? 'scale(1.1) translateY(-4px)' : 'scale(1)', transition: 'transform 0.15s'
       }}>
-      {children}
+      <div onClick={onIconClick} style={{ cursor: 'pointer' }}>
+        {children}
+      </div>
       {isEditing ? (
         <input
           ref={inputRef}
@@ -75,12 +77,16 @@ function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRen
           }}
         />
       ) : (
-        <span style={{
-          fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif',
-          textShadow: '0 1px 6px rgba(59,35,20,0.9)',
-          background: hovered ? 'rgba(59,35,20,0.78)' : 'transparent',
-          padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3
-        }}>
+        <span 
+          onClick={onClick}
+          onDoubleClick={onDoubleClick}
+          style={{
+            fontSize: 11, color: '#f5ead8', fontFamily: 'Georgia, serif',
+            textShadow: '0 1px 6px rgba(59,35,20,0.9)',
+            background: hovered ? 'rgba(59,35,20,0.78)' : 'transparent',
+            padding: '1px 7px', borderRadius: 4, maxWidth: 90, textAlign: 'center', lineHeight: 1.3,
+            cursor: 'pointer'
+          }}>
           {label}
         </span>
       )}
@@ -746,7 +752,7 @@ export default function Home() {
   const photoInputRef = useRef(null)
   const user = useUserStore((s) => s.user)
   const wraps = useMemoryStore((s) => s.wraps)
-  const username = user?.name || user?.username || 'guest'
+  const username = localStorage.getItem('yearwrap_username') || user?.name || user?.username || 'guest'
 
   const activeWraps = Object.keys(wraps).length
   const foldersFilled = Object.values(wraps).reduce((total, yr) =>
@@ -992,9 +998,8 @@ export default function Home() {
               boxShadow: '0 8px 32px rgba(59,35,20,0.45), 0 2px 8px rgba(0,0,0,0.15), inset 0 0 0 1px rgba(200,180,150,0.25)',
               transform: 'rotate(3deg)',
               zIndex: 3,
-              cursor: 'pointer',
               borderRadius: 2,
-            }} onClick={() => photoInputRef.current?.click()}>
+            }}>
               <input ref={photoInputRef} type="file" accept="image/*" style={{ display: 'none' }}
                 onChange={e => {
                   const file = e.target.files?.[0]
@@ -1014,9 +1019,14 @@ export default function Home() {
                 {profilePhoto
                   ? <img src={profilePhoto} alt="profile" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.05) saturate(0.88)' }} />
                   : (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                    <div 
+                      onClick={() => photoInputRef.current?.click()}
+                      style={{ 
+                        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', 
+                        alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer'
+                      }}>
                       <i className="ri-add-circle-line" style={{ fontSize: 'clamp(18px,2vw,28px)', color: '#6b4226' }} />
-                      <span style={{ fontSize: 'clamp(7px,0.6vw,9px)', color: '#4a2e18', textAlign: 'center', lineHeight: 1.4 }}>add photo</span>
+                      <span style={{ fontSize: 'clamp(7px,0.6vw,9px)', color: '#4a2e18', textAlign: 'center', lineHeight: 1.4 }}>add your photo</span>
                     </div>
                   )
                 }
@@ -1033,9 +1043,120 @@ export default function Home() {
               {/* Bottom label */}
               <p style={{
                 textAlign: 'center', fontSize: 'clamp(8px,0.7vw,10px)',
-                color: '#5a3e28', marginTop: 7, fontWeight: 500, marginBottom: 0,
+                color: '#5a3e28', marginTop: 7, fontWeight: 500, marginBottom: 6,
                 fontFamily: 'Georgia, serif', letterSpacing: 0.5, opacity: 0.75,
               }}>{username}</p>
+
+              {/* Music player style controls */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+                padding: '0 clamp(8px,1vw,12px)'
+              }}>
+                {/* Progress bar */}
+                <div style={{
+                  width: '100%', height: 4, background: 'rgba(139,94,60,0.25)',
+                  borderRadius: 10, overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(foldersFilled / FOLDERS.length) * 100}%`,
+                    background: 'linear-gradient(90deg, #8b5e3c, #c8a882)',
+                    borderRadius: 10,
+                    transition: 'width 0.5s ease',
+                    position: 'relative'
+                  }}>
+                    {foldersFilled > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        right: -5,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 10,
+                        height: 10,
+                        background: '#f5a5b8',
+                        borderRadius: '50%',
+                        border: '2px solid #eeebe3',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                      }} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Player controls */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10
+                }}>
+                  <div style={{
+                    width: 22, height: 22,
+                    background: '#8b5e3c',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s, background 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)'
+                    e.currentTarget.style.background = '#a07850'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.background = '#8b5e3c'
+                  }}>
+                    <i className="ri-skip-back-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
+                  </div>
+
+                  <div style={{
+                    width: 28, height: 28,
+                    background: '#8b5e3c',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s, background 0.15s',
+                    boxShadow: '0 2px 6px rgba(139,94,60,0.4)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.15)'
+                    e.currentTarget.style.background = '#a07850'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.background = '#8b5e3c'
+                  }}>
+                    <i className="ri-pause-fill" style={{ fontSize: 14, color: '#f5ead8' }} />
+                  </div>
+
+                  <div style={{
+                    width: 22, height: 22,
+                    background: '#8b5e3c',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s, background 0.15s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)'
+                    e.currentTarget.style.background = '#a07850'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.background = '#8b5e3c'
+                  }}>
+                    <i className="ri-skip-forward-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
+                  </div>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -1046,8 +1167,9 @@ export default function Home() {
           {FOLDERS.map(item => (
             <DesktopIcon 
               key={item.name} 
-              label={folderNames[item.name] || item.name.replace('_', ' ')} 
-              onClick={() => setActiveFolder(item.name)}
+              label={folderNames[item.name] || item.name.replace('_', ' ')}
+              onIconClick={() => setActiveFolder(item.name)}
+              onClick={() => setEditingFolder(item.name)}
               onDoubleClick={(e) => {
                 e.stopPropagation()
                 setEditingFolder(item.name)

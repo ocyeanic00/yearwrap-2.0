@@ -18,6 +18,37 @@ function LiveClock() {
 
 export default function Navbar({ navigate, username, mousePos, GooglyEyes, onCCToggle, ccOpen, widgets }) {
     const [hamburgerOpen, setHamburgerOpen] = useState(false)
+    const [isEditingUsername, setIsEditingUsername] = useState(false)
+    const [editUsername, setEditUsername] = useState(username)
+    const usernameInputRef = React.useRef(null)
+
+    useEffect(() => {
+        setEditUsername(username)
+    }, [username])
+
+    useEffect(() => {
+        if (isEditingUsername && usernameInputRef.current) {
+            usernameInputRef.current.focus()
+            usernameInputRef.current.select()
+        }
+    }, [isEditingUsername])
+
+    const handleSaveUsername = () => {
+        if (editUsername.trim()) {
+            localStorage.setItem('yearwrap_username', editUsername.trim())
+            window.location.reload() // Reload to update username everywhere
+        }
+        setIsEditingUsername(false)
+    }
+
+    const handleUsernameKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            handleSaveUsername()
+        } else if (e.key === 'Escape') {
+            setEditUsername(username)
+            setIsEditingUsername(false)
+        }
+    }
 
     const handleAction = action => {
         if (action === 'help_video') { window.open('/help', '_blank'); return }
@@ -77,10 +108,39 @@ export default function Navbar({ navigate, username, mousePos, GooglyEyes, onCCT
 
                 {/* RIGHT */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: 'rgba(245,234,216,0.80)', fontFamily: 'Georgia, serif' }}
-                        className="yw-username-label">
-                        {username}
-                    </span>
+                    {isEditingUsername ? (
+                        <input
+                            ref={usernameInputRef}
+                            type="text"
+                            value={editUsername}
+                            onChange={(e) => setEditUsername(e.target.value)}
+                            onKeyDown={handleUsernameKeyDown}
+                            onBlur={handleSaveUsername}
+                            style={{
+                                fontSize: 11, color: '#3b2314', fontFamily: 'Georgia, serif',
+                                background: '#f5ead8', padding: '2px 8px', borderRadius: 4,
+                                border: '1px solid #c8a882', outline: 'none', width: 80
+                            }}
+                        />
+                    ) : (
+                        <span 
+                            onClick={() => setIsEditingUsername(true)}
+                            onDoubleClick={() => setIsEditingUsername(true)}
+                            style={{ 
+                                fontSize: 11, 
+                                color: 'rgba(245,234,216,0.80)', 
+                                fontFamily: 'Georgia, serif',
+                                cursor: 'pointer',
+                                padding: '2px 8px',
+                                borderRadius: 4,
+                                transition: 'background 0.15s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.background = 'rgba(200,168,130,0.15)'}
+                            onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                            className="yw-username-label">
+                            {username}
+                        </span>
+                    )}
                     {GooglyEyes && <GooglyEyes mousePos={mousePos} />}
                     <div style={{ width: 1, height: 14, background: 'rgba(200,168,130,0.3)' }} />
                     {/* Control center toggle */}
