@@ -1173,7 +1173,7 @@ export default function Home() {
               onDoubleClick={(e) => {
                 e.stopPropagation()
                 setEditingFolder(item.name)
-              }}
+              }}    
               isEditing={editingFolder === item.name}
               onRename={(newName) => {
                 if (newName) {
