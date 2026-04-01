@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useMemoryStore from '../store/memoryStore'
 import useUserStore from '../store/userStore'
@@ -30,7 +30,7 @@ function getHighlight(folders) {
   return 'No memories written yet — your story is waiting.'
 }
 
-function RecapModal({ year, folders, onClose }) {
+function RecapModal({ year, folders, layout, onClose }) {
   const vibe = getVibe(folders)
   const allPhotos = Object.values(folders).flatMap(f => f.photos || [])
   const filledFolders = Object.entries(folders).filter(([, f]) => f.text || f.photos?.length > 0)
@@ -66,8 +66,16 @@ function RecapModal({ year, folders, onClose }) {
             <span style={{ fontSize: 10, letterSpacing: 2, color: 'rgba(200,168,130,0.7)', textTransform: 'uppercase', fontFamily: 'Georgia, serif' }}>yearwrap</span>
             <h2 style={{ margin: '2px 0 0', fontSize: 36, fontWeight: 700, color: '#f5ead8', fontFamily: 'Georgia, serif', lineHeight: 1 }}>{year}</h2>
           </div>
-          <div style={{ position: 'absolute', bottom: 16, right: 24, background: 'rgba(0,0,0,0.4)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: '#f5ead8', fontFamily: 'Georgia, serif' }}>
-            {vibe.emoji} {vibe.label}
+          <div style={{ position: 'absolute', bottom: 16, right: 24, display: 'flex', gap: 8, alignItems: 'center' }}>
+            {layout && (
+              <div style={{ background: 'rgba(200,168,130,0.25)', border: '1px solid rgba(200,168,130,0.4)', borderRadius: 20, padding: '4px 12px', fontSize: 11, color: '#f5d6a0', fontFamily: 'Georgia, serif', display: 'flex', alignItems: 'center', gap: 5 }}>
+                <i className={layout === 'magazine' ? 'ri-layout-top-line' : 'ri-collage-line'} style={{ fontSize: 12 }} />
+                {layout}
+              </div>
+            )}
+            <div style={{ background: 'rgba(0,0,0,0.4)', borderRadius: 20, padding: '4px 12px', fontSize: 12, color: '#f5ead8', fontFamily: 'Georgia, serif' }}>
+              {vibe.emoji} {vibe.label}
+            </div>
           </div>
         </div>
 
@@ -194,10 +202,22 @@ export default function Recap() {
   const [sort, setSort] = useState('newest')
   const [selectedYear, setSelectedYear] = useState(null)
 
+  // Read layout param from URL (set by the layout picker on Home)
+  const searchParams = new URLSearchParams(window.location.search)
+  const chosenLayout = searchParams.get('layout') // 'magazine' | 'scrapbook' | null
+
   const years = useMemo(() => {
     const ys = Object.keys(wraps).map(Number)
     return sort === 'newest' ? ys.sort((a, b) => b - a) : ys.sort((a, b) => a - b)
   }, [wraps, sort])
+
+  // Auto-open current year's recap if coming from layout picker
+  useEffect(() => {
+    if (chosenLayout) {
+      const currentYear = new Date().getFullYear()
+      if (wraps[currentYear]) setSelectedYear(currentYear)
+    }
+  }, [])
 
   return (
     <div style={{
@@ -306,6 +326,7 @@ export default function Recap() {
         <RecapModal
           year={selectedYear}
           folders={wraps[selectedYear]}
+          layout={chosenLayout}
           onClose={() => setSelectedYear(null)}
         />
       )}

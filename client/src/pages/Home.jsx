@@ -759,6 +759,10 @@ export default function Home() {
     total + Object.values(yr).filter(f => f.text || f.photos?.length > 0).length, 0)
   const photosSaved = Object.values(wraps).reduce((total, yr) =>
     total + Object.values(yr).reduce((t, f) => t + (f.photos?.length || 0), 0), 0)
+
+  // Current year folder completion for the progress bar
+  const currentYear = new Date().getFullYear()
+  const currentYearFolders = wraps[currentYear] || {}
   const [time, setTime] = useState(new Date())
 
   useEffect(() => { const t = setInterval(() => setTime(new Date()), 1000); return () => clearInterval(t) }, [])
@@ -794,6 +798,7 @@ export default function Home() {
   })
   const [editingFolder, setEditingFolder] = useState(null)
   const [ccOpen, setCcOpen] = useState(false)
+  const [layoutPickerOpen, setLayoutPickerOpen] = useState(false)
 
   const handleRenameFolder = (folderKey, newName) => {
     if (!newName.trim()) return
@@ -1048,160 +1053,138 @@ export default function Home() {
               }}>{username}</p>
 
               {/* Music player style controls */}
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 6,
-                padding: '0 clamp(8px,1vw,12px)'
-              }}>
-                {/* Progress bar */}
-                <div style={{
-                  width: '100%', height: 4, background: 'rgba(139,94,60,0.25)',
-                  borderRadius: 10, overflow: 'hidden',
-                  position: 'relative'
-                }}>
+              {(() => {
+                const currentYearFilled = FOLDERS.filter(f => {
+                  const d = currentYearFolders[f.name]
+                  return d?.text || d?.photos?.length > 0
+                }).length
+                const allDone = currentYearFilled === FOLDERS.length
+                return (
                   <div style={{
-                    height: '100%',
-                    width: `${(foldersFilled / FOLDERS.length) * 100}%`,
-                    background: 'linear-gradient(90deg, #8b5e3c, #c8a882)',
-                    borderRadius: 10,
-                    transition: 'width 0.5s ease',
-                    position: 'relative'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    padding: '0 clamp(8px,1vw,12px)'
                   }}>
-                    {foldersFilled > 0 && (
+                    {/* Progress bar */}
+                    <div style={{
+                      width: '100%', height: 4, background: 'rgba(139,94,60,0.25)',
+                      borderRadius: 10, overflow: 'hidden',
+                      position: 'relative'
+                    }}>
                       <div style={{
-                        position: 'absolute',
-                        right: -5,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        width: 10,
-                        height: 10,
-                        background: '#f5a5b8',
+                        height: '100%',
+                        width: `${(currentYearFilled / FOLDERS.length) * 100}%`,
+                        background: allDone
+                          ? 'linear-gradient(90deg, #c8a882, #f5d6a0)'
+                          : 'linear-gradient(90deg, #8b5e3c, #c8a882)',
+                        borderRadius: 10,
+                        transition: 'width 0.5s ease',
+                        position: 'relative'
+                      }}>
+                        {currentYearFilled > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            right: -5,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 10,
+                            height: 10,
+                            background: allDone ? '#f5d6a0' : '#f5a5b8',
+                            borderRadius: '50%',
+                            border: '2px solid #eeebe3',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                          }} />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Player controls */}
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 10
+                    }}>
+                      <div style={{
+                        width: 22, height: 22,
+                        background: '#8b5e3c',
                         borderRadius: '50%',
-                        border: '2px solid #eeebe3',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                      }} />
-                    )}
-                  </div>
-                </div>
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s, background 0.15s'
+                      }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.1)'
+                          e.currentTarget.style.background = '#a07850'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)'
+                          e.currentTarget.style.background = '#8b5e3c'
+                        }}>
+                        <i className="ri-skip-back-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
+                      </div>
 
-                {/* Player controls */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10
-                }}>
-                  <div style={{
-                    width: 22, height: 22,
-                    background: '#8b5e3c',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, background 0.15s'
-                  }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.1)'
-                      e.currentTarget.style.background = '#a07850'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)'
-                      e.currentTarget.style.background = '#8b5e3c'
-                    }}>
-                    <i className="ri-skip-back-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
-                  </div>
+                      {/* CENTER PLAY BUTTON — active only when all folders filled */}
+                      <div
+                        onClick={allDone ? () => setLayoutPickerOpen(true) : undefined}
+                        style={{
+                          width: 28, height: 28,
+                          background: allDone
+                            ? 'linear-gradient(135deg, #c8a882, #f5d6a0)'
+                            : 'rgba(139,94,60,0.4)',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: allDone ? 'pointer' : 'default',
+                          transition: 'transform 0.15s, background 0.15s, box-shadow 0.15s',
+                          boxShadow: allDone
+                            ? '0 0 12px rgba(200,168,130,0.7), 0 2px 6px rgba(139,94,60,0.4)'
+                            : 'none',
+                          opacity: allDone ? 1 : 0.45,
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!allDone) return
+                          e.currentTarget.style.transform = 'scale(1.15)'
+                          e.currentTarget.style.boxShadow = '0 0 20px rgba(200,168,130,0.9), 0 4px 10px rgba(139,94,60,0.5)'
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!allDone) return
+                          e.currentTarget.style.transform = 'scale(1)'
+                          e.currentTarget.style.boxShadow = '0 0 12px rgba(200,168,130,0.7), 0 2px 6px rgba(139,94,60,0.4)'
+                        }}>
+                        <i className="ri-play-fill" style={{ fontSize: 14, color: allDone ? '#3b2314' : '#f5ead8', marginLeft: 2 }} />
+                      </div>
 
-                  <div style={{
-                    width: 28, height: 28,
-                    background: '#8b5e3c',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, background 0.15s',
-                    boxShadow: '0 2px 6px rgba(139,94,60,0.4)'
-                  }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.15)'
-                      e.currentTarget.style.background = '#a07850'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)'
-                      e.currentTarget.style.background = '#8b5e3c'
-                    }}>
-                    <i className="ri-pause-fill" style={{ fontSize: 14, color: '#f5ead8' }} />
+                      <div style={{
+                        width: 22, height: 22,
+                        background: '#8b5e3c',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s, background 0.15s'
+                      }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.1)'
+                          e.currentTarget.style.background = '#a07850'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)'
+                          e.currentTarget.style.background = '#8b5e3c'
+                        }}>
+                        <i className="ri-skip-forward-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
+                      </div>
+                    </div>
                   </div>
-
-                  <div style={{
-                    width: 22, height: 22,
-                    background: '#8b5e3c',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.15s, background 0.15s'
-                  }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'scale(1.1)'
-                      e.currentTarget.style.background = '#a07850'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'scale(1)'
-                      e.currentTarget.style.background = '#8b5e3c'
-                    }}>
-                    <i className="ri-skip-forward-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
-                  </div>
-                </div>
-              </div>
+                )
+              })()}
             </div>
-
           </div>
-
-          {/* Generate Recap CTA — only when all folders filled + photo added */}
-          {(() => {
-            const currentYear = new Date().getFullYear()
-            const yearFolders = wraps[currentYear] || {}
-            const allFoldersFilled = FOLDERS.every(f => {
-              const d = yearFolders[f.name]
-              return d?.text || d?.photos?.length > 0
-            })
-            const ready = allFoldersFilled && !!profilePhoto
-            if (!ready) return null
-            return (
-              <button
-                onClick={() => navigate('/recap')}
-                style={{
-                  position: 'fixed',
-                  bottom: 80,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 50,
-                  padding: 'clamp(8px,1vh,12px) clamp(18px,2.5vw,32px)',
-                  background: 'linear-gradient(135deg, #6b4226 0%, #c8a882 100%)',
-                  border: 'none', borderRadius: 30, cursor: 'pointer',
-                  fontSize: 'clamp(11px,0.9vw,14px)', fontWeight: 700,
-                  color: '#1e0e06', fontFamily: 'Georgia, serif', letterSpacing: 0.5,
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  boxShadow: '0 0 24px rgba(200,168,130,0.5), 0 4px 16px rgba(59,35,20,0.4)',
-                  animation: 'yw-pulse 2s ease-in-out infinite',
-                  whiteSpace: 'nowrap',
-                }}>
-                <i className="ri-sparkling-2-line" style={{ fontSize: 'clamp(13px,1.1vw,16px)' }} />
-                save my year
-              </button>
-            )
-          })()}
-          <style>{`
-            @keyframes yw-pulse {
-              0%, 100% { box-shadow: 0 0 24px rgba(200,168,130,0.5), 0 4px 16px rgba(59,35,20,0.4); }
-              50% { box-shadow: 0 0 40px rgba(200,168,130,0.75), 0 6px 24px rgba(59,35,20,0.5); }
-            }
-          `}</style>
-
         </div>
 
         {/* RIGHT — desktop icons */}
@@ -1231,8 +1214,6 @@ export default function Home() {
         </div>
       </div>
 
-
-
       {/* Dock */}
       <div style={{
         position: 'absolute', bottom: 8, left: '50%', transform: 'translateX(-50%)',
@@ -1258,6 +1239,121 @@ export default function Home() {
       </div>
 
       {activeFolder && <FolderModal name={activeFolder} onClose={() => setActiveFolder(null)} />}
+
+      {/* Layout Picker Modal */}
+      {layoutPickerOpen && (
+        <div
+          onClick={() => setLayoutPickerOpen(false)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 300,
+            background: 'rgba(10,4,1,0.82)', backdropFilter: 'blur(18px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: 20,
+          }}
+        >
+          <div onClick={e => e.stopPropagation()} style={{ fontFamily: 'Georgia, serif', width: 'min(600px, 100%)' }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <p style={{ margin: '0 0 6px', fontSize: 9, letterSpacing: 4, color: 'rgba(200,168,130,0.45)', textTransform: 'uppercase' }}>your year is ready</p>
+              <h2 style={{ margin: 0, fontSize: 22, color: '#f5ead8', fontWeight: 700, letterSpacing: -0.5 }}>pick a layout</h2>
+              <p style={{ margin: '6px 0 0', fontSize: 12, color: 'rgba(200,168,130,0.45)' }}>the ai will fill it with your memories</p>
+            </div>
+
+            {/* Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+              {/* ── MAGAZINE ── */}
+              <div
+                onClick={() => { setLayoutPickerOpen(false); navigate('/recap?layout=magazine') }}
+                style={{ cursor: 'pointer', borderRadius: 18, overflow: 'hidden', border: '1.5px solid rgba(200,168,130,0.18)', transition: 'transform 0.18s, border-color 0.18s, box-shadow 0.18s', background: 'rgba(30,14,6,0.7)' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = '#c8a882'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(200,168,130,0.2)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(200,168,130,0.18)'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                {/* Preview — magazine page */}
+                <div style={{ background: '#f0ebe0', padding: 10, aspectRatio: '3/4', position: 'relative', overflow: 'hidden' }}>
+                  {/* full-bleed hero photo */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '52%', background: 'linear-gradient(160deg,#c8a882,#8b5e3c)', borderRadius: '0 0 4px 4px' }}>
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 50%, rgba(240,235,224,0.6))' }} />
+                    <div style={{ position: 'absolute', bottom: 8, left: 10, right: 10 }}>
+                      <div style={{ height: 3, width: '40%', background: 'rgba(255,255,255,0.7)', borderRadius: 2, marginBottom: 4 }} />
+                      <div style={{ height: 2, width: '60%', background: 'rgba(255,255,255,0.4)', borderRadius: 2 }} />
+                    </div>
+                  </div>
+                  {/* masthead bar */}
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 14, background: 'rgba(59,35,20,0.85)', display: 'flex', alignItems: 'center', paddingLeft: 8, gap: 4 }}>
+                    <div style={{ height: 2, width: 18, background: '#c8a882', borderRadius: 1 }} />
+                    <div style={{ height: 2, width: 10, background: 'rgba(200,168,130,0.4)', borderRadius: 1 }} />
+                  </div>
+                  {/* text body */}
+                  <div style={{ position: 'absolute', top: '55%', left: 10, right: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    <div style={{ height: 7, background: '#3b2314', borderRadius: 2, width: '80%' }} />
+                    <div style={{ height: 4, background: 'rgba(59,35,20,0.35)', borderRadius: 2, width: '100%' }} />
+                    <div style={{ height: 4, background: 'rgba(59,35,20,0.25)', borderRadius: 2, width: '90%' }} />
+                    <div style={{ height: 4, background: 'rgba(59,35,20,0.2)', borderRadius: 2, width: '70%' }} />
+                    {/* 2-col text block */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginTop: 4 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {[100, 85, 90, 75].map((w, i) => <div key={i} style={{ height: 3, background: 'rgba(59,35,20,0.18)', borderRadius: 1, width: `${w}%` }} />)}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        {[90, 100, 70, 85].map((w, i) => <div key={i} style={{ height: 3, background: 'rgba(59,35,20,0.18)', borderRadius: 1, width: `${w}%` }} />)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Label */}
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 700, color: '#f5ead8', letterSpacing: 0.3 }}>magazine</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(200,168,130,0.55)', lineHeight: 1.5 }}>full-bleed hero photo, editorial columns</p>
+                </div>
+              </div>
+
+              {/* ── SCRAPBOOK ── */}
+              <div
+                onClick={() => { setLayoutPickerOpen(false); navigate('/recap?layout=scrapbook') }}
+                style={{ cursor: 'pointer', borderRadius: 18, overflow: 'hidden', border: '1.5px solid rgba(200,168,130,0.18)', transition: 'transform 0.18s, border-color 0.18s, box-shadow 0.18s', background: 'rgba(30,14,6,0.7)' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = '#c8a882'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(200,168,130,0.2)' }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(200,168,130,0.18)'; e.currentTarget.style.boxShadow = 'none' }}
+              >
+                {/* Preview — scrapbook page */}
+                <div style={{ background: '#ede8dc', padding: 10, aspectRatio: '3/4', position: 'relative', overflow: 'hidden' }}>
+                  {/* scattered polaroids */}
+                  <div style={{ position: 'absolute', top: 10, left: 8, width: '44%', background: 'white', padding: '5px 5px 14px', boxShadow: '0 3px 10px rgba(0,0,0,0.18)', transform: 'rotate(-4deg)', borderRadius: 2 }}>
+                    <div style={{ width: '100%', paddingBottom: '80%', background: 'linear-gradient(135deg,#c8a882,#a07850)', borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '60%', background: 'rgba(59,35,20,0.2)', borderRadius: 1, margin: '5px auto 0' }} />
+                  </div>
+                  <div style={{ position: 'absolute', top: 6, right: 6, width: '40%', background: 'white', padding: '5px 5px 14px', boxShadow: '0 3px 10px rgba(0,0,0,0.15)', transform: 'rotate(5deg)', borderRadius: 2 }}>
+                    <div style={{ width: '100%', paddingBottom: '80%', background: 'linear-gradient(135deg,#b8956a,#8b6240)', borderRadius: 1 }} />
+                    <div style={{ height: 2, width: '50%', background: 'rgba(59,35,20,0.2)', borderRadius: 1, margin: '5px auto 0' }} />
+                  </div>
+                  {/* note card */}
+                  <div style={{ position: 'absolute', top: '44%', left: 6, width: '50%', background: '#fdf6e3', padding: '7px 8px', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', transform: 'rotate(2deg)', borderRadius: 3 }}>
+                    {[100, 80, 90, 65].map((w, i) => <div key={i} style={{ height: 2, background: 'rgba(59,35,20,0.2)', borderRadius: 1, width: `${w}%`, marginBottom: 4 }} />)}
+                  </div>
+                  {/* small polaroid bottom right */}
+                  <div style={{ position: 'absolute', bottom: 10, right: 8, width: '38%', background: 'white', padding: '4px 4px 12px', boxShadow: '0 3px 10px rgba(0,0,0,0.15)', transform: 'rotate(-3deg)', borderRadius: 2 }}>
+                    <div style={{ width: '100%', paddingBottom: '80%', background: 'linear-gradient(135deg,#d4b896,#c8a882)', borderRadius: 1 }} />
+                  </div>
+                  {/* tape strips */}
+                  <div style={{ position: 'absolute', top: 28, left: '30%', width: 22, height: 7, background: 'rgba(200,168,130,0.45)', borderRadius: 2, transform: 'rotate(-10deg)' }} />
+                  <div style={{ position: 'absolute', top: 22, right: '28%', width: 18, height: 7, background: 'rgba(200,168,130,0.35)', borderRadius: 2, transform: 'rotate(8deg)' }} />
+                </div>
+                {/* Label */}
+                <div style={{ padding: '12px 14px 14px' }}>
+                  <p style={{ margin: '0 0 3px', fontSize: 13, fontWeight: 700, color: '#f5ead8', letterSpacing: 0.3 }}>scrapbook</p>
+                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(200,168,130,0.55)', lineHeight: 1.5 }}>polaroids, notes & tape scattered on a page</p>
+                </div>
+              </div>
+
+            </div>
+
+            <p style={{ margin: '18px 0 0', fontSize: 10, color: 'rgba(200,168,130,0.3)', textAlign: 'center', letterSpacing: 0.5 }}>
+              <i className="ri-sparkling-2-line" style={{ marginRight: 5 }} />
+              ai generates your template from your memories
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
