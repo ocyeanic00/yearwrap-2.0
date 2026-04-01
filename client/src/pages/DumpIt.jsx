@@ -47,8 +47,11 @@ export default function DumpIt() {
         }}>
           <button onClick={() => navigate("/")} style={{
             background: "none", border: "none", cursor: "pointer",
-            color: "#c8a882", fontFamily: "Georgia, serif", display: "flex", alignItems: "center", gap: 6, fontSize: 13
-          }}>
+            color: "rgba(200,168,130,0.6)", fontFamily: "Georgia, serif", display: "flex", alignItems: "center", gap: 6, fontSize: 13,
+            transition: "color 0.15s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.color = "#f5ead8"}
+            onMouseLeave={e => e.currentTarget.style.color = "rgba(200,168,130,0.6)"}>
             <i className="ri-arrow-left-line" style={{ fontSize: 16 }} /> home
           </button>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>

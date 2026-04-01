@@ -77,7 +77,7 @@ function DesktopIcon({ children, label, onClick, onDoubleClick, isEditing, onRen
           }}
         />
       ) : (
-        <span 
+        <span
           onClick={onClick}
           onDoubleClick={onDoubleClick}
           style={{
@@ -168,7 +168,7 @@ function ControlCenter({ onClose, navigate }) {
   const [volume, setVolume] = useState(50)
   const [weather, setWeather] = useState(null)
   const [loading, setLoading] = useState(true)
-  
+
   // Spotify state
   const [spotifyToken, setSpotifyToken] = useState(null)
   const [currentTrack, setCurrentTrack] = useState(null)
@@ -193,7 +193,7 @@ function ControlCenter({ onClose, navigate }) {
       console.log('Fetching current track...')
       let track = await spotifyService.getCurrentlyPlaying(token)
       console.log('Currently playing:', track)
-      
+
       if (!track || !track.item) {
         // If nothing playing, get recently played
         console.log('Nothing playing, fetching recently played...')
@@ -203,7 +203,7 @@ function ControlCenter({ onClose, navigate }) {
           track = { item: recent.track, is_playing: false }
         }
       }
-      
+
       if (track && track.item) {
         console.log('Setting track:', track.item.name)
         setCurrentTrack(track.item)
@@ -284,19 +284,19 @@ function ControlCenter({ onClose, navigate }) {
             async (position) => {
               const { latitude, longitude } = position.coords
               console.log('Got location:', latitude, longitude)
-              
+
               // Use Open-Meteo API (free, no API key needed)
               const response = await fetch(
                 `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4`
               )
               const data = await response.json()
               console.log('Weather data:', data)
-              
+
               if (data.current) {
                 // Current weather
                 const current = data.current
                 const today = data.daily
-                
+
                 // Map weather codes to descriptions and icons
                 const getWeatherInfo = (code) => {
                   const weatherCodes = {
@@ -324,10 +324,10 @@ function ControlCenter({ onClose, navigate }) {
                   }
                   return weatherCodes[code] || { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' }
                 }
-                
+
                 const currentWeather = getWeatherInfo(current.weather_code)
                 const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                
+
                 setWeather({
                   temp: Math.round(current.temperature_2m),
                   description: currentWeather.desc,
@@ -355,16 +355,16 @@ function ControlCenter({ onClose, navigate }) {
                 const ipResponse = await fetch('https://ipapi.co/json/')
                 const ipData = await ipResponse.json()
                 console.log('IP location:', ipData)
-                
+
                 const response = await fetch(
                   `https://api.open-meteo.com/v1/forecast?latitude=${ipData.latitude}&longitude=${ipData.longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4`
                 )
                 const data = await response.json()
-                
+
                 if (data.current) {
                   const current = data.current
                   const today = data.daily
-                  
+
                   const getWeatherInfo = (code) => {
                     const weatherCodes = {
                       0: { desc: 'Clear sky', icon: 'ri-sun-line' },
@@ -377,10 +377,10 @@ function ControlCenter({ onClose, navigate }) {
                     }
                     return weatherCodes[code] || { desc: 'Partly cloudy', icon: 'ri-sun-cloudy-line' }
                   }
-                  
+
                   const currentWeather = getWeatherInfo(current.weather_code)
                   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-                  
+
                   setWeather({
                     temp: Math.round(current.temperature_2m),
                     description: currentWeather.desc,
@@ -429,7 +429,7 @@ function ControlCenter({ onClose, navigate }) {
         setLoading(false)
       }
     }
-    
+
     fetchWeather()
   }, [])
 
@@ -502,7 +502,7 @@ function ControlCenter({ onClose, navigate }) {
         windowWidth: document.documentElement.scrollWidth,
         windowHeight: document.documentElement.scrollHeight
       })
-        
+
       // Convert canvas to blob
       canvas.toBlob(async (blob) => {
         try {
@@ -510,7 +510,7 @@ function ControlCenter({ onClose, navigate }) {
           await navigator.clipboard.write([
             new ClipboardItem({ 'image/png': blob })
           ])
-          
+
           // Show notification
           const notification = document.createElement('div')
           notification.textContent = 'Screenshot copied to clipboard!'
@@ -651,8 +651,8 @@ function ControlCenter({ onClose, navigate }) {
             </div>
             <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
               {currentTrack?.album?.images?.[0]?.url ? (
-                <img 
-                  src={currentTrack.album.images[0].url} 
+                <img
+                  src={currentTrack.album.images[0].url}
                   alt="Album"
                   style={{
                     width: 32, height: 32, borderRadius: 8, flexShrink: 0,
@@ -680,14 +680,14 @@ function ControlCenter({ onClose, navigate }) {
             </div>
             {spotifyToken && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }} onClick={e => e.stopPropagation()}>
-                <i 
-                  className="ri-skip-back-line" 
+                <i
+                  className="ri-skip-back-line"
                   onClick={handlePrevious}
                   style={{ fontSize: 13, color: 'rgba(200,168,130,0.85)', cursor: 'pointer', transition: 'color 0.15s' }}
                   onMouseEnter={e => e.target.style.color = '#c8a882'}
                   onMouseLeave={e => e.target.style.color = 'rgba(200,168,130,0.85)'}
                 />
-                <div 
+                <div
                   onClick={handlePlayPause}
                   style={{
                     width: 26, height: 26, borderRadius: '50%', background: '#1ed760',
@@ -699,8 +699,8 @@ function ControlCenter({ onClose, navigate }) {
                 >
                   <i className={isPlaying ? 'ri-pause-fill' : 'ri-play-fill'} style={{ fontSize: 13, color: '#000' }} />
                 </div>
-                <i 
-                  className="ri-skip-forward-line" 
+                <i
+                  className="ri-skip-forward-line"
                   onClick={handleNext}
                   style={{ fontSize: 13, color: 'rgba(200,168,130,0.85)', cursor: 'pointer', transition: 'color 0.15s' }}
                   onMouseEnter={e => e.target.style.color = '#c8a882'}
@@ -939,8 +939,8 @@ export default function Home() {
         </div>
 
         {/* CENTER — layered polaroid + note + envelope */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: 0 }}>
-          <div style={{ position: 'relative', width: 'clamp(220px,28vw,380px)', height: 'clamp(240px,30vw,400px)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: 0, gap: 'clamp(16px,2.5vh,28px)', paddingBottom: 'clamp(8px,1.5vh,20px)' }}>
+          <div style={{ position: 'relative', width: 'clamp(200px,24vw,320px)', height: 'clamp(200px,24vw,320px)' }}>
 
             {/* Kraft envelope — back layer */}
             <div style={{
@@ -1019,10 +1019,10 @@ export default function Home() {
                 {profilePhoto
                   ? <img src={profilePhoto} alt="profile" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'contrast(1.05) saturate(0.88)' }} />
                   : (
-                    <div 
+                    <div
                       onClick={() => photoInputRef.current?.click()}
-                      style={{ 
-                        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', 
+                      style={{
+                        position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
                         alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer'
                       }}>
                       <i className="ri-add-circle-line" style={{ fontSize: 'clamp(18px,2vw,28px)', color: '#6b4226' }} />
@@ -1102,14 +1102,14 @@ export default function Home() {
                     cursor: 'pointer',
                     transition: 'transform 0.15s, background 0.15s'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.1)'
-                    e.currentTarget.style.background = '#a07850'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.background = '#8b5e3c'
-                  }}>
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.1)'
+                      e.currentTarget.style.background = '#a07850'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)'
+                      e.currentTarget.style.background = '#8b5e3c'
+                    }}>
                     <i className="ri-skip-back-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
                   </div>
 
@@ -1124,14 +1124,14 @@ export default function Home() {
                     transition: 'transform 0.15s, background 0.15s',
                     boxShadow: '0 2px 6px rgba(139,94,60,0.4)'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.15)'
-                    e.currentTarget.style.background = '#a07850'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.background = '#8b5e3c'
-                  }}>
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.15)'
+                      e.currentTarget.style.background = '#a07850'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)'
+                      e.currentTarget.style.background = '#8b5e3c'
+                    }}>
                     <i className="ri-pause-fill" style={{ fontSize: 14, color: '#f5ead8' }} />
                   </div>
 
@@ -1145,14 +1145,14 @@ export default function Home() {
                     cursor: 'pointer',
                     transition: 'transform 0.15s, background 0.15s'
                   }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.1)'
-                    e.currentTarget.style.background = '#a07850'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)'
-                    e.currentTarget.style.background = '#8b5e3c'
-                  }}>
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.1)'
+                      e.currentTarget.style.background = '#a07850'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)'
+                      e.currentTarget.style.background = '#8b5e3c'
+                    }}>
                     <i className="ri-skip-forward-mini-fill" style={{ fontSize: 12, color: '#f5ead8' }} />
                   </div>
                 </div>
@@ -1160,20 +1160,62 @@ export default function Home() {
             </div>
 
           </div>
+
+          {/* Generate Recap CTA — only when all folders filled + photo added */}
+          {(() => {
+            const currentYear = new Date().getFullYear()
+            const yearFolders = wraps[currentYear] || {}
+            const allFoldersFilled = FOLDERS.every(f => {
+              const d = yearFolders[f.name]
+              return d?.text || d?.photos?.length > 0
+            })
+            const ready = allFoldersFilled && !!profilePhoto
+            if (!ready) return null
+            return (
+              <button
+                onClick={() => navigate('/recap')}
+                style={{
+                  position: 'fixed',
+                  bottom: 80,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 50,
+                  padding: 'clamp(8px,1vh,12px) clamp(18px,2.5vw,32px)',
+                  background: 'linear-gradient(135deg, #6b4226 0%, #c8a882 100%)',
+                  border: 'none', borderRadius: 30, cursor: 'pointer',
+                  fontSize: 'clamp(11px,0.9vw,14px)', fontWeight: 700,
+                  color: '#1e0e06', fontFamily: 'Georgia, serif', letterSpacing: 0.5,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  boxShadow: '0 0 24px rgba(200,168,130,0.5), 0 4px 16px rgba(59,35,20,0.4)',
+                  animation: 'yw-pulse 2s ease-in-out infinite',
+                  whiteSpace: 'nowrap',
+                }}>
+                <i className="ri-sparkling-2-line" style={{ fontSize: 'clamp(13px,1.1vw,16px)' }} />
+                save my year
+              </button>
+            )
+          })()}
+          <style>{`
+            @keyframes yw-pulse {
+              0%, 100% { box-shadow: 0 0 24px rgba(200,168,130,0.5), 0 4px 16px rgba(59,35,20,0.4); }
+              50% { box-shadow: 0 0 40px rgba(200,168,130,0.75), 0 6px 24px rgba(59,35,20,0.5); }
+            }
+          `}</style>
+
         </div>
 
         {/* RIGHT — desktop icons */}
         <div style={{ width: 'clamp(65px,7.5vw,100px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'clamp(6px,1.2vh,16px)', flexShrink: 0 }}>
           {FOLDERS.map(item => (
-            <DesktopIcon 
-              key={item.name} 
+            <DesktopIcon
+              key={item.name}
               label={folderNames[item.name] || item.name.replace('_', ' ')}
               onIconClick={() => setActiveFolder(item.name)}
               onClick={() => setEditingFolder(item.name)}
               onDoubleClick={(e) => {
                 e.stopPropagation()
                 setEditingFolder(item.name)
-              }}    
+              }}
               isEditing={editingFolder === item.name}
               onRename={(newName) => {
                 if (newName) {

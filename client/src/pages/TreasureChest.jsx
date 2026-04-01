@@ -332,8 +332,10 @@ export default function TreasureChest() {
 
             {/* TOP BAR */}
             <div style={{ position: "relative", zIndex: 30, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px 12px" }}>
-                <button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(200,168,130,0.6)", fontSize: 13, fontFamily: "Georgia, serif", display: "flex", alignItems: "center", gap: 5, transition: "color 0.15s" }}
-                    onMouseEnter={e => e.currentTarget.style.color = "#c8a882"}
+                <button onClick={() => navigate("/")} style={{
+                    background: "none", border: "none", cursor: "pointer", color: "rgba(200,168,130,0.6)", fontSize: 13, fontFamily: "Georgia, serif", display: "flex", alignItems: "center", gap: 5, transition: "color 0.15s",
+                }}
+                    onMouseEnter={e => e.currentTarget.style.color = "#f5ead8"}
                     onMouseLeave={e => e.currentTarget.style.color = "rgba(200,168,130,0.6)"}>
                     <i className="ri-arrow-left-line" style={{ fontSize: 15 }} /> home
                 </button>

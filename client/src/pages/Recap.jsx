@@ -223,7 +223,7 @@ export default function Recap() {
           display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20,
           color: 'rgba(200,168,130,0.5)', fontSize: 12, fontFamily: 'Georgia, serif', transition: 'color 0.15s',
         }}
-          onMouseEnter={e => e.currentTarget.style.color = '#c8a882'}
+          onMouseEnter={e => e.currentTarget.style.color = '#f5ead8'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(200,168,130,0.5)'}>
           <i className="ri-arrow-left-line" /> back home
         </button>
